@@ -1,0 +1,257 @@
+[
+ {
+  "name": "fix(): 21 rule cases",
+  "ok": true,
+  "detail": "[]"
+ },
+ {
+  "name": "split_points: every piece <= 28 s",
+  "ok": true,
+  "detail": "[24.0, 24.8, 21.2]"
+ },
+ {
+  "name": "split_points: cut lands in the quiet gap",
+  "ok": true,
+  "detail": "24.05"
+ },
+ {
+  "name": "split_points: short clip not cut",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: plain terms",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: accents and slashes survive",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: dedupes any case, drops empty",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: bad percent escapes are skipped, not fatal",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: control characters and long terms dropped",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: capped at 30 terms",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "parse_vocabulary: None and empty header",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "server loads and /health = ok",
+  "ok": true,
+  "detail": "5.0s"
+ },
+ {
+  "name": "transcribe plain1: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 0.94s \"Please send me the report by Friday afternoon.\""
+ },
+ {
+  "name": "transcribe plain2: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 1.11s \"The meeting starts at ten and we need the slides ready.\""
+ },
+ {
+  "name": "transcribe sap1: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 1.33s \"Post the goods receipt in MIGO and then check the invoice in MIRO.\""
+ },
+ {
+  "name": "transcribe sap2: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 1.28s \"The IDoc failed in the S/4HANA system, so we raised an incident.\""
+ },
+ {
+  "name": "transcribe sap3: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 1.21s \"Open the Fiori app and check the OData service in BTP.\""
+ },
+ {
+  "name": "transcribe notsap1: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 1.02s \"It is my go-to place for lunch.\""
+ },
+ {
+  "name": "transcribe notsap2: HTTP 200 and WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 0.97s \"Cloud usage went up last month.\""
+ },
+ {
+  "name": "exact SAP spelling sap1",
+  "ok": true,
+  "detail": "missing [] in \"Post the goods receipt in MIGO and then check the invoice in MIRO.\""
+ },
+ {
+  "name": "exact SAP spelling sap2",
+  "ok": true,
+  "detail": "missing [] in \"The IDoc failed in the S/4HANA system, so we raised an incident.\""
+ },
+ {
+  "name": "exact SAP spelling sap3",
+  "ok": true,
+  "detail": "missing [] in \"Open the Fiori app and check the OData service in BTP.\""
+ },
+ {
+  "name": "\"my go to place\" not rewritten to MIGO",
+  "ok": true,
+  "detail": "It is my go-to place for lunch."
+ },
+ {
+  "name": "\"cloud usage\" not rewritten to Claude",
+  "ok": true,
+  "detail": "Cloud usage went up last month."
+ },
+ {
+  "name": "format plain1_44k_stereo: accepted, WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 \"Please send me the report by Friday afternoon.\""
+ },
+ {
+  "name": "format plain1_8k: accepted, WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 \"Please send me the report by Friday afternoon.\""
+ },
+ {
+  "name": "format plain1_48k_f32: accepted, WER <= 0.25",
+  "ok": true,
+  "detail": "200 wer=0.00 \"Please send me the report by Friday afternoon.\""
+ },
+ {
+  "name": "silence -> 200 empty text",
+  "ok": true,
+  "detail": "200 \"\""
+ },
+ {
+  "name": "0.12 s clip -> 200 empty text",
+  "ok": true,
+  "detail": "200 \"\""
+ },
+ {
+  "name": "not audio -> 400",
+  "ok": true,
+  "detail": "400 unreadable audio: Error opening <_io.BytesIO object at 0x11e367f60>: Format not "
+ },
+ {
+  "name": "empty body -> 400",
+  "ok": true,
+  "detail": "400 empty body"
+ },
+ {
+  "name": "wrong path -> 404",
+  "ok": true,
+  "detail": "404"
+ },
+ {
+  "name": "GET unknown -> 404",
+  "ok": true,
+  "detail": "404"
+ },
+ {
+  "name": "79 s clip: WER <= 0.20 (no tail lost)",
+  "ok": true,
+  "detail": "wer=0.000 words=225/225 10.2s"
+ },
+ {
+  "name": "79 s clip: last sentence present",
+  "ok": true,
+  "detail": " the plant teams handle exceptions. After that, we talked about the invoice verification backlog and who owns each item."
+ },
+ {
+  "name": "4 parallel requests all correct",
+  "ok": true,
+  "detail": "5.5s total"
+ },
+ {
+  "name": "vocabulary header: normal clip unchanged",
+  "ok": true,
+  "detail": "200 \"The meeting starts at ten and we need the slides ready.\""
+ },
+ {
+  "name": "vocabulary header: 30 long terms (prompt over the limit) still works",
+  "ok": true,
+  "detail": "200 \"The meeting starts at 10 and we need the slides ready.\""
+ },
+ {
+  "name": "vocabulary header: garbage is ignored, not an error",
+  "ok": true,
+  "detail": "200 \"The meeting starts at ten and we need the slides ready.\""
+ },
+ {
+  "name": "vocabulary header: invented names are spelled right more often with the hint",
+  "ok": true,
+  "detail": "without: \"Please ask Zo blacks about the Quenvarit report.\" | with: \"Please ask Zorblax about the Quenvarith report.\""
+ },
+ {
+  "name": "warm latency < 3 s for clips <= 4 s",
+  "ok": true,
+  "detail": "max 1.33s median 1.11s"
+ },
+ {
+  "name": "SIGTERM -> clean exit",
+  "ok": true,
+  "detail": "rc=0"
+ },
+ {
+  "name": "idle server loads",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "idle shutdown within ~8-14 s of last call, /health did not reset it",
+  "ok": true,
+  "detail": "8.585286140441895"
+ },
+ {
+  "name": "idle exit code 0",
+  "ok": true,
+  "detail": "0"
+ },
+ {
+  "name": "port freed after idle exit",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "/health?touch=1 resets the idle timer (alive after 14 s with idle=8)",
+  "ok": true,
+  "detail": "poll=None"
+ },
+ {
+  "name": "racing starts: one \"started\", one \"already running\"",
+  "ok": true,
+  "detail": "['already running 80942', 'started 80942']"
+ },
+ {
+  "name": "racing starts: pid file names the live server",
+  "ok": true,
+  "detail": "/opt/homebrew/Cellar/python@3.11/3.11.15/Frameworks/Python.f"
+ },
+ {
+  "name": "racing starts: stop leaves nothing running",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "name": "stop refuses a foreign pid",
+  "ok": true,
+  "detail": "pid not ours or not running; not killed"
+ }
+]

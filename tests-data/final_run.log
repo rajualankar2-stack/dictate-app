@@ -1,0 +1,112 @@
+##### swift unit tests
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.014 (0.016) seconds
+	 Executed 104 tests, with 1 test skipped and 0 failures (0 unexpected) in 6.724 (6.742) seconds
+	 Executed 104 tests, with 1 test skipped and 0 failures (0 unexpected) in 6.724 (6.743) seconds
+	 Executed 12 tests, with 0 failures (0 unexpected) in 4.717 (4.720) seconds
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.009 (0.011) seconds
+	 Executed 13 tests, with 0 failures (0 unexpected) in 0.313 (0.316) seconds
+	 Executed 16 tests, with 0 failures (0 unexpected) in 0.724 (0.728) seconds
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.004 (0.004) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 0.933 (0.935) seconds
+##### integration test (real server)
+	 Executed 1 test, with 0 failures (0 unexpected) in 8.303 (8.303) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 8.303 (8.304) seconds
+cold: 1.13 s from key release to pasted
+warm: 1.11 s from key release to pasted
+no server left
+##### build + sign app
+Identifier=com.raj.dictate
+Signature size=4791
+TeamIdentifier=7ABAG66RBQ
+built: ~/Projects/dictate-app/build/Dictate.app
+##### server test suite
+PASS fix(): 21 rule cases  [[]]
+PASS split_points: every piece <= 28 s  [[24.0, 24.8, 21.2]]
+PASS split_points: cut lands in the quiet gap  [24.05]
+PASS split_points: short clip not cut
+PASS parse_vocabulary: plain terms
+PASS parse_vocabulary: accents and slashes survive
+PASS parse_vocabulary: dedupes any case, drops empty
+PASS parse_vocabulary: bad percent escapes are skipped, not fatal
+PASS parse_vocabulary: control characters and long terms dropped
+PASS parse_vocabulary: capped at 30 terms
+PASS parse_vocabulary: None and empty header
+PASS server loads and /health = ok  [5.0s]
+PASS transcribe plain1: HTTP 200 and WER <= 0.25  [200 wer=0.00 0.94s "Please send me the report by Friday afternoon."]
+PASS transcribe plain2: HTTP 200 and WER <= 0.25  [200 wer=0.00 1.11s "The meeting starts at ten and we need the slides ready."]
+PASS transcribe sap1: HTTP 200 and WER <= 0.25  [200 wer=0.00 1.33s "Post the goods receipt in MIGO and then check the invoice in MIRO."]
+PASS transcribe sap2: HTTP 200 and WER <= 0.25  [200 wer=0.00 1.28s "The IDoc failed in the S/4HANA system, so we raised an incident."]
+PASS transcribe sap3: HTTP 200 and WER <= 0.25  [200 wer=0.00 1.21s "Open the Fiori app and check the OData service in BTP."]
+PASS transcribe notsap1: HTTP 200 and WER <= 0.25  [200 wer=0.00 1.02s "It is my go-to place for lunch."]
+PASS transcribe notsap2: HTTP 200 and WER <= 0.25  [200 wer=0.00 0.97s "Cloud usage went up last month."]
+PASS exact SAP spelling sap1  [missing [] in "Post the goods receipt in MIGO and then check the invoice in MIRO."]
+PASS exact SAP spelling sap2  [missing [] in "The IDoc failed in the S/4HANA system, so we raised an incident."]
+PASS exact SAP spelling sap3  [missing [] in "Open the Fiori app and check the OData service in BTP."]
+PASS "my go to place" not rewritten to MIGO  [It is my go-to place for lunch.]
+PASS "cloud usage" not rewritten to Claude  [Cloud usage went up last month.]
+PASS format plain1_44k_stereo: accepted, WER <= 0.25  [200 wer=0.00 "Please send me the report by Friday afternoon."]
+PASS format plain1_8k: accepted, WER <= 0.25  [200 wer=0.00 "Please send me the report by Friday afternoon."]
+PASS format plain1_48k_f32: accepted, WER <= 0.25  [200 wer=0.00 "Please send me the report by Friday afternoon."]
+PASS silence -> 200 empty text  [200 ""]
+PASS 0.12 s clip -> 200 empty text  [200 ""]
+PASS not audio -> 400  [400 unreadable audio: Error opening <_io.BytesIO object at 0x11e367f60>: Format not ]
+PASS empty body -> 400  [400 empty body]
+PASS wrong path -> 404  [404]
+PASS GET unknown -> 404  [404]
+PASS 79 s clip: WER <= 0.20 (no tail lost)  [wer=0.000 words=225/225 10.2s]
+PASS 79 s clip: last sentence present  [ the plant teams handle exceptions. After that, we talked about the invoice verification backlog and who owns each item.]
+PASS 4 parallel requests all correct  [5.5s total]
+PASS vocabulary header: normal clip unchanged  [200 "The meeting starts at ten and we need the slides ready."]
+PASS vocabulary header: 30 long terms (prompt over the limit) still works  [200 "The meeting starts at 10 and we need the slides ready."]
+PASS vocabulary header: garbage is ignored, not an error  [200 "The meeting starts at ten and we need the slides ready."]
+PASS vocabulary header: invented names are spelled right more often with the hint  [without: "Please ask Zo blacks about the Quenvarit report." | with: "Please ask Zorblax about the Quenvarith report."]
+PASS warm latency < 3 s for clips <= 4 s  [max 1.33s median 1.11s]
+PASS SIGTERM -> clean exit  [rc=0]
+PASS idle server loads
+PASS idle shutdown within ~8-14 s of last call, /health did not reset it  [8.585286140441895]
+PASS idle exit code 0  [0]
+PASS port freed after idle exit
+PASS /health?touch=1 resets the idle timer (alive after 14 s with idle=8)  [poll=None]
+PASS racing starts: one "started", one "already running"  [['already running 80942', 'started 80942']]
+PASS racing starts: pid file names the live server  [/opt/homebrew/Cellar/python@3.11/3.11.15/Frameworks/Python.f]
+PASS racing starts: stop leaves nothing running
+PASS stop refuses a foreign pid  [pid not ours or not running; not killed]
+{"passed": 51, "total": 51}
+##### soak + 30 real held-out clips (English forced)
+started 80954
+RSS at start: 528 MB
+soak 60 requests: bad=0  p50=1.20s p95=1.43s max=1.48s  first10 mean=1.09s last10 mean=1.25s
+RSS after soak: 1689 MB
+real held-out clips: n=30  audio=512s  server time=50.1s (10.2x real time)
+WER strict (my scorer): 6.85%   lenient (fillers dropped): 6.10%   worst clip: 38%   clips with 0 errors: 7
+RSS at end: 1688 MB
+stopped 80954
+##### process scenarios
+== A. idle shutdown, then restart on next use (idle=6s)
+{'launched': 1, 'rawFromServer': 'Please send me the report by Friday afternoon.', 'readySeconds': 5.1, 'text': 'Please send me the report by Friday afternoon.', 'totalSeconds': 5.9, 'vocabularySent': 0}
+server after idle: stopped
+{'launched': 1, 'rawFromServer': 'Please send me the report by Friday afternoon.', 'readySeconds': 4.5, 'text': 'Please send me the report by Friday afternoon.', 'totalSeconds': 5.4, 'vocabularySent': 0}
+stopped 81141
+== B. kill -9 the server, stale pid file left behind, next use recovers
+{'launched': 1, 'rawFromServer': 'Please send me the report by Friday afternoon.', 'readySeconds': 4.4, 'text': 'Please send me the report by Friday afternoon.', 'totalSeconds': 5.3, 'vocabularySent': 0}
+pid file still says 81160; process alive? scripts/scenarios.sh: line 23: kill: (81160) - No such process
+{'launched': 1, 'rawFromServer': 'Post the goods receipt in MIGO and then check the invoice in MIRO.', 'readySeconds': 4.5, 'text': 'Post the goods receipt in MIGO and then check the invoice in MIRO.', 'totalSeconds': 5.6, 'vocabularySent': 0}
+stopped 81192
+== C. port 8772 held by another program: must fail fast with a clear message
+{'error': 'could not start server: the server exited while starting (see ~/Projects/dictate-app/server/dictate_srv.log)'}
+took 5 s
+scripts/scenarios.sh: line 34: 81208 Terminated: 15          python3 -m http.server 8772 --bind 127.0.0.1 > /dev/null 2>&1  (wd: /var/folders/8_/xs4_02rx2g7chsnnqlwhy_0w0000gn/T/tmp.MPIVqikd0t/www)
+(port released if nothing above)
+== D. python path wrong: immediate clear error
+{'error': 'could not start server: python not found at /nonexistent/python'}
+== E. config.json broken: warning, defaults still work
+configWarning: config.json ignored: The data couldn’t be read because it isn’t in the correct format.
+== cleanup check
+stopped
+no dummy server left
+##### leftovers
+no dictate server running
+##### DONE

@@ -1,0 +1,26 @@
+# Build
+.build/
+build/
+*.dmg
+
+# Audio
+*.wav
+audio/
+
+# Server
+server/*.log
+server/*.pid
+server/__pycache__/
+
+# Temp
+/tmp/
+*.tmp
+
+# macOS
+.DS_Store
+brag-output-*/
+
+# Local work, not part of the app
+brag-*/
+review/
+tasks/

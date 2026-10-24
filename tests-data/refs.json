@@ -1,0 +1,11 @@
+{
+ "plain1": "Please send me the report by Friday afternoon.",
+ "plain2": "The meeting starts at ten and we need the slides ready.",
+ "sap1": "Post the goods receipt in MIGO and then check the invoice in MIRO.",
+ "sap2": "The IDoc failed in the S four HANA system, so we raised an incident.",
+ "sap3": "Open the Fiori app and check the OData service in BTP.",
+ "notsap1": "It is my go to place for lunch.",
+ "notsap2": "Cloud usage went up last month.",
+ "vocab1": "Please ask Zorblax about the Quenvarith report.",
+ "long_a": "First we reviewed the purchase order process and agreed that the approval steps are too slow. Then we looked at the goods receipt posting and how the plant teams handle exceptions. After that we talked about the invoice verification backlog and who owns each item. "
+}
