@@ -5,7 +5,7 @@ import QuartzCore
 /// Shows 9 vertical bars (tallest in center) that pulse like a live audio
 /// waveform. Disappears on release.
 final class RecordingOverlay {
-    private var window: NSWindow?
+    private var window: NSPanel?
     private var bars: [CALayer] = []
     private var originalHeights: [CGFloat] = []
     private let size: CGFloat = 80
@@ -33,7 +33,8 @@ final class RecordingOverlay {
         }
         refreshColors()
         positionNearCursor()
-        window?.makeKeyAndOrderFront(nil)
+        // Regardless: we're an accessory app and must not steal focus from the paste target.
+        window?.orderFrontRegardless()
         startAnimation()
     }
 
@@ -58,15 +59,17 @@ final class RecordingOverlay {
     }
 
     private func build() {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
-                         styleMask: [.borderless], backing: .buffered, defer: false)
-        w.level = .popUpMenu
+        // Only a non-activating panel is allowed onto another app's full-screen Space.
+        let w = NSPanel(contentRect: NSRect(x: 0, y: 0, width: size, height: size),
+                        styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        w.level = .screenSaver
+        w.hidesOnDeactivate = false
         w.isOpaque = false
         w.backgroundColor = .clear
         w.hasShadow = true
         w.ignoresMouseEvents = true
         w.isReleasedWhenClosed = false
-        w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
 
         let v = NSView(frame: NSRect(x: 0, y: 0, width: size, height: size))
         v.wantsLayer = true
