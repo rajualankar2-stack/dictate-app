@@ -5,6 +5,7 @@ build/
 
 # Audio
 *.wav
+!Resources/Sounds/sound_*.wav
 audio/
 
 # Server
@@ -24,3 +25,6 @@ brag-output-*/
 brag-*/
 review/
 tasks/
+
+# Python env (scripts/setup.sh)
+.venv/

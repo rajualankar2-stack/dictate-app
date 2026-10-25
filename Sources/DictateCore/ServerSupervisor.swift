@@ -85,7 +85,7 @@ public actor ServerSupervisor: TranscriptionService {
     static func runScript(_ cfg: AppConfig, args: [String]) throws -> String {
         let fm = FileManager.default
         guard fm.isExecutableFile(atPath: cfg.expandedPython) else {
-            throw ServerStartError.launchFailed("python not found at \(cfg.expandedPython)")
+            throw ServerStartError.launchFailed("python not found at \(cfg.expandedPython) (run scripts/setup.sh)")
         }
         guard fm.fileExists(atPath: cfg.expandedScript) else {
             throw ServerStartError.launchFailed("server script not found at \(cfg.expandedScript)")

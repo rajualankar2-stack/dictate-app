@@ -3,12 +3,24 @@
 # Signs with the stable Apple Development certificate so the Accessibility grant survives rebuilds.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+# Full Xcode if present; otherwise plain Command Line Tools.
+if [ -d /Applications/Xcode.app ]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+else
+  # shortcut: the macOS 27 SDK's SwiftUI @State needs a macro plugin only Xcode ships, so use the CLT's 26.x SDK; needs Xcode once CLT drops it.
+  OLDSDK=$(ls -d /Library/Developer/CommandLineTools/SDKs/MacOSX26.*.sdk 2>/dev/null | sort -V | tail -1 || true)
+  [ -n "$OLDSDK" ] && export SDKROOT="$OLDSDK"
+fi
 IDENTITY="${DICTATE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Apple Development: [^"]*\)".*/\1/p' | head -1)}"
-[ -n "$IDENTITY" ] || { echo "No Apple Development certificate found; set DICTATE_SIGN_IDENTITY"; exit 1; }
+[ -n "$IDENTITY" ] || echo "No Apple Development certificate: signing ad-hoc (Accessibility must be re-granted after each rebuild)"
+IDENTITY="${IDENTITY:--}"
 
 swift build -c release 2>&1 | tee /tmp/build.log | grep -E "error|warning: unre|Compiling|Build complete"
-if grep -q "error:" /tmp/build.log; then echo "BUILD FAILED"; exit 1; fi
+if grep -q "error:" /tmp/build.log; then
+  echo "BUILD FAILED"
+  grep -q SwiftUIMacros /tmp/build.log && echo "This SDK needs full Xcode: install it from the App Store, then run this again."
+  exit 1
+fi
 BIN=.build/release/Dictate
 [ -x "$BIN" ] || { echo "build failed: $BIN missing"; exit 1; }
 
@@ -50,6 +62,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>NSMicrophoneUsageDescription</key><string>Dictate records your voice while you hold the hotkey, then transcribes it on this Mac.</string>
 </dict></plist>
 PLIST
+# Lets the app find server/ and .venv/ in this clone wherever it was cloned.
+plutil -insert DictateProjectDir -string "$PWD" "$APP/Contents/Info.plist"
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 
 if codesign --force --sign "$IDENTITY" "$APP" 2>build/codesign.err; then

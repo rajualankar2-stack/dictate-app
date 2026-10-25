@@ -21,9 +21,12 @@ public struct CorrectionSuggestion: Codable, Equatable, Identifiable {
     }
 }
 public struct AppConfig: Codable, Equatable {
+    /// The clone this app was built from (build_app.sh records it in Info.plist), so a fresh install finds its server and venv.
+    public static let projectDir = (Bundle.main.object(forInfoDictionaryKey: "DictateProjectDir") as? String) ?? "~/Projects/dictate-app"
     public var serverURL: String = "http://127.0.0.1:8772"
-    public var pythonPath: String = "~/Sandbox/experiments/moonshine-stt/.venv/bin/python"
-    public var serverScript: String = "~/Projects/dictate-app/server/dictate_srv.py"
+    /// The venv scripts/setup.sh creates.
+    public var pythonPath: String = AppConfig.projectDir + "/.venv/bin/python"
+    public var serverScript: String = AppConfig.projectDir + "/server/dictate_srv.py"
     public var idleSeconds: Int = 600
     /// Carbon virtual key code. 49 = Space.
     public var hotkeyKeyCode: UInt32 = 49
