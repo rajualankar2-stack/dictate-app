@@ -57,7 +57,7 @@ public struct AppConfig: Codable, Equatable {
     public var soundPack: Int = 1
     /// Show the floating waveform animation while recording.
     public var showRecordingAnimation: Bool = true
-    /// Speech model backend: "parakeet" (default, on-device, Apple MLX) or "whistle".
+    /// Speech model backend: "parakeet" (default, on-device, 731 MB) or "whistle".
     public var modelBackend: String = "parakeet"
     /// Press Enter after pasting dictated text.
     public var autoPressEnter: Bool = false

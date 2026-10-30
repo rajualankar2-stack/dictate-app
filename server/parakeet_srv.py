@@ -10,8 +10,9 @@ Same HTTP contract as whistle_srv.py (127.0.0.1 only):
   GET  /health      200 "ok" once the engine is ready
   POST /transcribe  body = WAV bytes. 200 text/plain = the text (empty = silence or too short).
 
-The speech engine is NVIDIA Parakeet TDT 0.6B v3 on Apple MLX (package parakeet-mlx), loaded in this
-process. The first run downloads the model (about 2.5 GB) from Hugging Face; later runs work offline.
+The speech engine is NVIDIA Parakeet Unified EN 0.6B (Q8_0 GGUF, 731 MB, the model the HEX app uses) run by
+transcribe.cpp (pip package transcribe-cpp, Metal on Apple silicon). The first run downloads the model from
+Hugging Face; later runs work offline.
 The SAP word fixes, silence guard and 16 kHz conversion come from stt_common.py.
 X-Vocabulary is accepted but not used: Parakeet has no vocabulary input.
 """
@@ -25,7 +26,8 @@ from stt_common import fix, prepare_audio, MIN_SECONDS, SILENCE_RMS   # noqa: E4
 PORT = int(os.environ.get('PARAKEET_PORT', os.environ.get('DICTATE_PORT', '8774')))
 PID = HERE / 'parakeet_srv.pid'
 LOG = HERE / 'parakeet_srv.log'
-MODEL = os.environ.get('DICTATE_PARAKEET_MODEL', 'mlx-community/parakeet-tdt-0.6b-v3')
+MODEL_REPO = 'handy-computer/parakeet-unified-en-0.6b-gguf'
+MODEL_FILE = 'parakeet-unified-en-0.6b-Q8_0.gguf'
 DEFAULT_IDLE = 600
 
 
@@ -50,33 +52,39 @@ def is_ours(pid):
 
 
 class Engine:
-    """NVIDIA Parakeet TDT 0.6B v3 on Apple MLX (package parakeet-mlx), loaded in this process.
+    """NVIDIA Parakeet Unified EN 0.6B (Q8_0 GGUF, 731 MB) through transcribe.cpp (Metal on Apple silicon).
 
-    MLX streams belong to one thread, so one worker thread loads the model and runs every request."""
+    This is the same model file the HEX app uses. One worker thread loads the model and runs every request."""
 
     def __init__(self):
         import queue
-        self.model = None
-        self.source = 'parakeet-mlx'
+        self.source = 'transcribe.cpp'
         self.jobs = queue.Queue()
         self.error = None
         self.ready = threading.Event()
         threading.Thread(target=self._worker, daemon=True).start()
 
+    def _model_path(self):
+        env = os.environ.get('DICTATE_PARAKEET_GGUF')
+        if env:
+            return env
+        from huggingface_hub import hf_hub_download   # cached after the first download
+        return hf_hub_download(MODEL_REPO, MODEL_FILE)
+
     def _worker(self):
         try:
-            from parakeet_mlx import from_pretrained   # downloads the model on the first run
-            self.model = from_pretrained(MODEL)
+            import transcribe_cpp
+            model = transcribe_cpp.Model(self._model_path())
+            session = model.session()
         except BaseException as e:
             self.error = e
+            self.ready.set()
+            return
         self.ready.set()
-        while self.error is None:
-            wav_bytes, box, done = self.jobs.get()
+        while True:
+            pcm, box, done = self.jobs.get()
             try:
-                import tempfile
-                with tempfile.NamedTemporaryFile(suffix='.wav') as f:
-                    f.write(wav_bytes); f.flush()
-                    box.append(self.model.transcribe(f.name).text)
+                box.append(session.run(pcm).text)
             except BaseException as e:
                 box.append(e)
             done.set()
@@ -86,9 +94,9 @@ class Engine:
         if self.error is not None:
             raise RuntimeError(f'Parakeet model failed to load: {self.error!r}')
 
-    def transcribe(self, wav_bytes):
+    def transcribe(self, pcm):
         box, done = [], threading.Event()
-        self.jobs.put((wav_bytes, box, done))
+        self.jobs.put((pcm, box, done))
         done.wait()
         if isinstance(box[0], BaseException):
             raise box[0]
@@ -96,13 +104,6 @@ class Engine:
 
     def close(self):
         pass
-
-
-def to_wav16(w):
-    import soundfile as sf
-    buf = io.BytesIO()
-    sf.write(buf, w, 16000, format='WAV', subtype='PCM_16')
-    return buf.getvalue()
 
 
 def serve(idle):
@@ -113,7 +114,7 @@ def serve(idle):
     engine.connect()
     lock = threading.Lock()
     state = {'last': time.time()}
-    print(f'ready in {time.time() - t0:.1f}s via {engine.source}, model {MODEL}', flush=True)
+    print(f'ready in {time.time() - t0:.1f}s via {engine.source}, model {MODEL_FILE}', flush=True)
 
     def transcribe(raw):
         w = prepare_audio(raw)
@@ -122,7 +123,7 @@ def serve(idle):
         if float(np.sqrt((w ** 2).mean())) < SILENCE_RMS:
             return ''
         with lock:
-            text = engine.transcribe(to_wav16(w))
+            text = engine.transcribe(w)
         return fix(text).strip()
 
     class H(BaseHTTPRequestHandler):
