@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 |---|---|---|
 | 🎙️ | **Toggle recording** | Press to start, press again to stop. No holding a key down. |
 | 🌊 | **Floating waveform** | Nine animated bars that adapt to dark and light mode |
-| 🧠 | **Two model backends** | Parakeet through the HEX app (default, about 0.25 s per clip) or Whistle (16 MB, CPU only) |
+| 🧠 | **Two model backends** | Parakeet on Apple MLX (default, about 0.25 s per clip) or Whistle (16 MB, CPU only) |
 | 🗣️ | **Voice commands** | Say "my email" and it inserts your email address |
 | 🔁 | **Text replacements** | Word-level rules, e.g. "cloud code" → "Claude Code" |
 | 🤫 | **Silence auto-stop** | Stops recording after a configurable pause |
@@ -47,7 +47,7 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 - macOS 14+ (Sonoma or later)
 - Xcode Command Line Tools (`xcode-select --install`)
 - Python 3.10+ (macOS ships 3.9, so `brew install python@3.11` if needed)
-- Parakeet: the [HEX](https://github.com/anomalyco/hex) app (`brew install --cask anomalyco/tap/hex`); its model uses about 0.9 GB of RAM
+- Parakeet: about 2.5 GB disk for the model and about 1.5 GB RAM while it runs (it stops after 10 idle minutes)
 - Whistle: about 20 MB disk and about 30 MB RAM
 
 ## 🚀 Quick start
@@ -59,14 +59,14 @@ Clone anywhere you like, and keep the folder: the app runs its server from it.
 ```bash
 git clone https://github.com/rajualankar2-stack/dictate-app.git
 cd dictate-app
-bash scripts/setup.sh       # creates .venv with the small audio packages
+bash scripts/setup.sh       # creates .venv and downloads the Parakeet model (about 2.5 GB, once)
 bash scripts/build_app.sh
 open build/Dictate.app
 ```
 
 The app starts the transcription server itself on the first key press. For the lighter Whistle backend, also run `.venv/bin/pip install cactus-needle` and pick Whistle under Settings → Dictation.
 
-Install HEX first and open it once so it downloads its Parakeet model. If HEX is running, Dictate uses its model. If not, Dictate starts `hex service --embedded`.
+Nothing else needs to be installed: the speech engine (`parakeet-mlx`) runs inside the app's own Python.
 
 ### 2. Signing
 
@@ -97,7 +97,7 @@ dictate-app/
 ├── Sources/Dictate/          # macOS app (SwiftUI + AppKit)
 ├── Sources/DictateCore/      # Shared logic (config, controller, words)
 ├── server/                   # Python transcription servers
-│   ├── parakeet_srv.py       # Parakeet through HEX (default)
+│   ├── parakeet_srv.py       # Parakeet on MLX (default)
 │   ├── whistle_srv.py        # Whistle (16 MB)
 │   └── stt_common.py         # SAP word fixes, audio preparation
 ├── Resources/Sounds/         # Sound packs
