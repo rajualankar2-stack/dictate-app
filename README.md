@@ -19,6 +19,20 @@ A macOS menu-bar dictation app. All transcription runs locally, so your audio ne
 
 https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 
+## 🖼️ Screenshots
+
+<div align="center">
+
+| Welcome | Permissions | Try it |
+|---|---|---|
+| <img src="docs/screenshots/tour-0-light.png" width="260"> | <img src="docs/screenshots/tour-1-light.png" width="260"> | <img src="docs/screenshots/tour-2-light.png" width="260"> |
+
+| General | Text (dark) | Dictation |
+|---|---|---|
+| <img src="docs/screenshots/settings-general-light.png" width="260"> | <img src="docs/screenshots/settings-text-dark.png" width="260"> | <img src="docs/screenshots/settings-dictation-light.png" width="260"> |
+
+</div>
+
 ## ✨ Features
 
 | | Feature | What it does |
@@ -40,6 +54,7 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 ## 🔒 Privacy
 
 - All audio processing happens on your Mac
+- The only download is the speech model (731 MB, once, from Hugging Face). After that the app works offline
 - The server listens on `127.0.0.1` only (the config validator rejects non-localhost URLs)
 - Audio saving is opt-in and off by default
 - No data is sent to any cloud service
@@ -47,7 +62,7 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 ## 📋 Requirements
 
 - macOS 14+ (Sonoma or later)
-- Xcode Command Line Tools (`xcode-select --install`)
+- Xcode or the Xcode Command Line Tools (`xcode-select --install`)
 - Python 3.10+ (macOS ships 3.9, so `brew install python@3.11` if needed)
 - Parakeet: about 731 MB disk for the model and about 1 GB RAM while it runs (it stops after 10 idle minutes)
 
@@ -65,9 +80,7 @@ bash scripts/build_app.sh
 open build/Dictate.app
 ```
 
-The app starts the transcription server itself on the first key press. For the lighter Whistle backend, also run `.venv/bin/pip install cactus-needle` and pick Whistle under Settings → Dictation.
-
-Nothing else needs to be installed: the speech engine (`transcribe-cpp`, Metal) runs inside the app's own Python.
+The app starts the transcription server itself on the first key press. Nothing else needs to be installed: the speech engine (`transcribe-cpp`, Metal) runs inside the app's own Python.
 
 ### 2. Signing
 
@@ -75,21 +88,32 @@ Nothing else needs to be installed: the speech engine (`transcribe-cpp`, Metal) 
 
 ### 3. Grant permissions
 
-On first launch, macOS asks for:
+On first launch a short welcome tour asks for these, one at a time, then lets you try a dictation. Reopen it any time from the menu bar icon (Welcome tour…). macOS asks for:
 
 - **Microphone**, for recording
 - **Accessibility**, for pasting text (System Settings → Privacy & Security → Accessibility)
+- **Input Monitoring**, only if you use the right Option key as the shortcut
 
 ### 4. Configure
 
 Open Settings from the menu bar icon:
 
-| Tab | Settings |
+| Page | Settings |
 |---|---|
-| **General** | Sounds, animation, auto-Enter |
+| **General** | Shortcut, launch at login, Dock icon, sounds, animation, auto-Enter, audio saving |
+| **Text** | Letter case (normal, lowercase, UPPERCASE, random) and no trailing punctuation, with a live preview |
 | **Words** | Vocabulary, replacements, voice commands |
-| **Dictation** | Silence threshold, model backend, server location |
-| **Status** | Permissions, engine status |
+| **Dictation** | Recording limits, clipboard timing, speech engine and idle time |
+| **Permissions** | Microphone, Accessibility and Input Monitoring status |
+
+### How dictated text is processed
+
+1. Parakeet writes the text.
+2. Built-in fixes correct common SAP and tech terms (`server/stt_common.py`).
+3. Your voice commands run.
+4. Your replacements run (whole words, ignoring capitals).
+5. The Text page options (letter case, trailing punctuation) run last.
+6. Dictate pastes the result.
 
 ## 🗂️ Project structure
 
@@ -101,6 +125,7 @@ dictate-app/
 │   ├── parakeet_srv.py       # Parakeet via transcribe.cpp (default)
 │   └── stt_common.py         # SAP word fixes, audio preparation
 ├── Resources/Sounds/         # Sound packs
+├── docs/screenshots/         # Images used in this README
 ├── scripts/                  # Build and test scripts
 └── Tests/                    # Unit tests
 ```
