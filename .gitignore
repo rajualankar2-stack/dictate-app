@@ -28,3 +28,4 @@ tasks/
 
 # Python env (scripts/setup.sh)
 .venv/
+server/*.lock

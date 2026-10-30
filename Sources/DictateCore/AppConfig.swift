@@ -23,10 +23,10 @@ public struct CorrectionSuggestion: Codable, Equatable, Identifiable {
 public struct AppConfig: Codable, Equatable {
     /// The clone this app was built from (build_app.sh records it in Info.plist), so a fresh install finds its server and venv.
     public static let projectDir = (Bundle.main.object(forInfoDictionaryKey: "DictateProjectDir") as? String) ?? "~/Projects/dictate-app"
-    public var serverURL: String = "http://127.0.0.1:8772"
+    public var serverURL: String = "http://127.0.0.1:8774"
     /// The venv scripts/setup.sh creates.
     public var pythonPath: String = AppConfig.projectDir + "/.venv/bin/python"
-    public var serverScript: String = AppConfig.projectDir + "/server/dictate_srv.py"
+    public var serverScript: String = AppConfig.projectDir + "/server/parakeet_srv.py"
     public var idleSeconds: Int = 600
     /// Carbon virtual key code. 49 = Space.
     public var hotkeyKeyCode: UInt32 = 49
@@ -57,8 +57,8 @@ public struct AppConfig: Codable, Equatable {
     public var soundPack: Int = 1
     /// Show the floating waveform animation while recording.
     public var showRecordingAnimation: Bool = true
-    /// Speech model backend: "whisper" or "whistle".
-    public var modelBackend: String = "whisper"
+    /// Speech model backend: "parakeet" (default, via the HEX app) or "whistle".
+    public var modelBackend: String = "parakeet"
     /// Press Enter after pasting dictated text.
     public var autoPressEnter: Bool = false
     /// Last selected settings tab.
@@ -158,10 +158,10 @@ public struct AppConfig: Codable, Equatable {
         c.silenceStopSeconds = clamp(c.silenceStopSeconds, 0, 10, "silenceStopSeconds")
         c.soundPack = clamp(c.soundPack, 1, 9, "soundPack")
         // H1: validate pythonPath and serverScript point to expected files
-        let allowedScripts = ["dictate_srv.py", "whistle_srv.py"]
+        let allowedScripts = ["whistle_srv.py", "parakeet_srv.py"]
         let scriptName = (c.serverScript as NSString).lastPathComponent
         if !allowedScripts.contains(scriptName) {
-            problems.append("serverScript must be dictate_srv.py or whistle_srv.py; using default")
+            problems.append("serverScript must be whistle_srv.py or parakeet_srv.py; using default")
             c.serverScript = d.serverScript
         }
         let pythonName = (c.pythonPath as NSString).lastPathComponent.lowercased()

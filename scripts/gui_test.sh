@@ -10,7 +10,7 @@ restore() { osascript -e "set volume output volume $OUTV" -e "set volume input v
 trap restore EXIT
 osascript -e 'set volume output volume 85' -e 'set volume input volume 70' >/dev/null 2>&1
 pgrep -f "Dictate.app/Contents/MacOS/Dictate$" >/dev/null || { open -n -g build/Dictate.app; sleep 4; }
-: > server/dictate_srv.log
+: > server/parakeet_srv.log
 rm -f /tmp/gh_target.json
 open -n --stdout /tmp/gh_target.json /tmp/GuiHarness.app --args target 45
 sleep 2.5
@@ -26,4 +26,4 @@ print('timed out:', t['timedOut'])
 print('seconds from key release to text: %.2f' % (t['textAppearedEpoch'] - d['releasedEpoch']))
 print('clipboard restored to the earlier content:', t['clipboardRestored'])
 EOF
-echo "--- server log (numbers only)"; grep -a -E "loaded|transcribed|skipped|error|bad audio" server/dictate_srv.log | tail -5
+echo "--- server log (numbers only)"; grep -a -E "loaded|transcribed|skipped|error|bad audio" server/parakeet_srv.log | tail -5

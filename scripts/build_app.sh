@@ -15,13 +15,14 @@ IDENTITY="${DICTATE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | 
 [ -n "$IDENTITY" ] || echo "No Apple Development certificate: signing ad-hoc (Accessibility must be re-granted after each rebuild)"
 IDENTITY="${IDENTITY:--}"
 
-swift build -c release 2>&1 | tee /tmp/build.log | grep -E "error|warning: unre|Compiling|Build complete"
+BUILD_DIR="${DICTATE_BUILD_DIR:-.build}"   # override when .build hits "disk I/O error" on its build database
+swift build -c release --scratch-path "$BUILD_DIR" 2>&1 | tee /tmp/build.log | grep -E "error|warning: unre|Compiling|Build complete"
 if grep -q "error:" /tmp/build.log; then
   echo "BUILD FAILED"
   grep -q SwiftUIMacros /tmp/build.log && echo "This SDK needs full Xcode: install it from the App Store, then run this again."
   exit 1
 fi
-BIN=.build/release/Dictate
+BIN="$BUILD_DIR/release/Dictate"
 [ -x "$BIN" ] || { echo "build failed: $BIN missing"; exit 1; }
 
 APP=build/Dictate.app

@@ -11,13 +11,13 @@ pgrep -f "Dictate.app/Contents/MacOS/Dictate$" >/dev/null || { open -n -g build/
 rm -f /tmp/gh_target.json; open -n --stdout /tmp/gh_target.json /tmp/GuiHarness.app --args target 120; sleep 2
 FAIL=0
 run() {  # name side hold letterAt expect(request|none)
-  $E $PY server/dictate_srv.py stop >/dev/null; sleep 2; : > server/dictate_srv.log
+  $E $PY server/parakeet_srv.py stop >/dev/null; sleep 2; : > server/parakeet_srv.log
   /tmp/gui_driver optdriver "$2" "$3" "${4:--1}" >/dev/null
   if [ "$5" = "request" ]; then
-    for i in $(seq 1 25); do grep -a -q -E "transcribed|skipped" server/dictate_srv.log && break; sleep 1; done
+    for i in $(seq 1 25); do grep -a -q -E "transcribed|skipped" server/parakeet_srv.log && break; sleep 1; done
   else sleep 8; fi
-  if grep -a -q -E "transcribed|skipped" server/dictate_srv.log; then got=request; else got=none; fi
-  srv=$($E $PY server/dictate_srv.py status)
+  if grep -a -q -E "transcribed|skipped" server/parakeet_srv.log; then got=request; else got=none; fi
+  srv=$($E $PY server/parakeet_srv.py status)
   if [ "$got" = "$5" ]; then r=PASS; else r=FAIL; FAIL=1; fi
   echo "$r  $1: expected $5, got $got (server: $srv)"
 }
@@ -28,6 +28,6 @@ run "D hold LEFT Option 1.5 s"                   left  1.5 -1  none
 run "E letter pressed AFTER recording began"     right 1.5 0.9 request
 run "F tap 0.25 s (just under the 0.3 s limit)"  right 0.25 -1 none
 run "G hold right Option 1.5 s again"            right 1.5 -1  request
-$E $PY server/dictate_srv.py stop >/dev/null
+$E $PY server/parakeet_srv.py stop >/dev/null
 pkill -f "GuiHarness.app/Contents/MacOS/GuiHarness"; rm -rf /tmp/GuiHarness.app /tmp/gui_driver /tmp/gh_target.json
 echo "failures: $FAIL"

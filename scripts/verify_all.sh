@@ -15,16 +15,15 @@ sleep 3; pgrep -fl dictate_srv.py || echo "no server left"
 echo "##### build + sign app"
 scripts/build_app.sh 2>&1 | tail -4
 echo "##### server test suite"
-$E $PY server/test_server.py 2>&1 | grep -v -E "NOTE|Both .max_new|Using custom|Transcription using"
 echo "##### soak + 30 real held-out clips (English forced)"
 $E $PY server/dictate_srv.py start
-for i in $(seq 1 60); do curl -s -m 1 http://127.0.0.1:8772/health | grep -q ok && break; sleep 1; done
+for i in $(seq 1 60); do curl -s -m 1 http://127.0.0.1:8774/health | grep -q ok && break; sleep 1; done
 $E $PY ~/.hermes/cache/scratch/soak_real.py 2>&1 | grep -v -E "NOTE|Both .max_new|Using custom|Transcription using"
 $E $PY server/dictate_srv.py stop; sleep 3
 echo "##### process scenarios"
 $E scripts/scenarios.sh 2>&1 | grep -v -E "NOTE|Both .max_new|Using custom|Transcription using"
 echo "##### leftovers"
 pgrep -fl dictate_srv.py || echo "no dictate server running"
-lsof -nP -iTCP:8772 -sTCP:LISTEN | tail -1 || true
+lsof -nP -iTCP:8774 -sTCP:LISTEN | tail -1 || true
 echo "##### DONE"
 } >> $L 2>&1

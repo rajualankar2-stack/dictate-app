@@ -343,15 +343,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         words.update(from: merged)
         if let s = self.stager { s.autoPressEnter = merged.autoPressEnter }
         // Switch server script based on model backend (persist to disk)
-        if merged.modelBackend == "whistle" {
-            let whistleScript = (merged.serverScript as NSString).deletingLastPathComponent + "/whistle_srv.py"
-            merged.serverScript = whistleScript
-            if merged.serverURL == "http://127.0.0.1:8772" { merged.serverURL = "http://127.0.0.1:8773" }
-        } else {
-            let whisperScript = (merged.serverScript as NSString).deletingLastPathComponent + "/dictate_srv.py"
-            merged.serverScript = whisperScript
-            if merged.serverURL == "http://127.0.0.1:8773" { merged.serverURL = "http://127.0.0.1:8772" }
-        }
+        // Each backend has its own script and default port; a custom address is left alone.
+        // An old "whisper" setting (removed) falls back to Parakeet.
+        let backends = ["whistle": ("whistle_srv.py", "http://127.0.0.1:8773"),
+                        "parakeet": ("parakeet_srv.py", "http://127.0.0.1:8774")]
+        if backends[merged.modelBackend] == nil { merged.modelBackend = "parakeet" }
+        let (script, url) = backends[merged.modelBackend]!
+        merged.serverScript = (merged.serverScript as NSString).deletingLastPathComponent + "/" + script
+        let defaultURLs = Set(backends.values.map { $0.1 } + ["http://127.0.0.1:8772"])
+        if defaultURLs.contains(merged.serverURL) { merged.serverURL = url }
         // Re-save with the corrected paths
         try? merged.save()
 

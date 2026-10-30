@@ -437,7 +437,7 @@ struct DictationTab: View {
             }
             Section("Advanced") {
                 Picker("Model", selection: $model.draft.modelBackend) {
-                    Text("Whisper (local, 484 MB)").tag("whisper")
+                    Text("Parakeet (via HEX app, fast)").tag("parakeet")
                     Text("Whistle (16 MB, Cactus)").tag("whistle")
                 }
                 DisclosureGroup("Engine location") {
