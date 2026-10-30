@@ -13,6 +13,8 @@ FIXES = [
     (r"(?<=\bsap )(?:my ?go|me ?go)\b", "MIGO", I),
     (r"\bmigo\b", "MIGO", I),
     (r"\bmiro\b", "MIRO", I),
+    (r"\b(?:idock|eye[ -]?dock)(s?)\b", lambda m: "IDoc" + m.group(1), I),
+    (r"\bs[\s/-]*4[\s-]*(?:harness|hanna|honor)\b", "S/4HANA", I),
     (r"\bi[ -]?docs?\b", lambda m: "IDocs" if m.group(0).lower().endswith("s") else "IDoc", I),
     (r"\bs[\s/-]*(?:slash[\s/-]*)?(?:4|for|four)[\s-]*hana\b", "S/4HANA", I),
     (r"\bfiori\b", "Fiori", I),
