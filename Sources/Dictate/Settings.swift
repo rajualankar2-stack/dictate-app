@@ -544,10 +544,7 @@ struct DictationTab: View {
             }
             Card(title: "Speech engine") {
                 SettingRow(icon: "cpu", title: "Model", detail: "Runs on this Mac. Audio never leaves it") {
-                    Picker("", selection: $model.draft.modelBackend) {
-                        Text("Parakeet (731 MB)").tag("parakeet")
-                        Text("Whistle (16 MB)").tag("whistle")
-                    }.labelsHidden().frame(width: 180)
+                    Text("Parakeet Unified EN (731 MB)").font(.system(size: 12)).foregroundStyle(DS.muted)
                 }
                 SettingRow(icon: "moon.zzz", title: "Stop when idle", detail: "The engine uses about 1 GB while it runs and stops by itself") {
                     Stepper(value: Binding(get: { max(1, model.draft.idleSeconds / 60) }, set: { model.draft.idleSeconds = $0 * 60 }), in: 1...240) {

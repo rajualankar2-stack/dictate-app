@@ -57,7 +57,7 @@ public struct AppConfig: Codable, Equatable {
     public var soundPack: Int = 1
     /// Show the floating waveform animation while recording.
     public var showRecordingAnimation: Bool = true
-    /// Speech model backend: "parakeet" (default, on-device, 731 MB) or "whistle".
+    /// Speech model backend. Only "parakeet" exists; older values fall back to it.
     public var modelBackend: String = "parakeet"
     /// Press Enter after pasting dictated text.
     public var autoPressEnter: Bool = false
@@ -168,10 +168,10 @@ public struct AppConfig: Codable, Equatable {
             c.textCase = d.textCase
         }
         // H1: validate pythonPath and serverScript point to expected files
-        let allowedScripts = ["whistle_srv.py", "parakeet_srv.py"]
+        let allowedScripts = ["parakeet_srv.py"]
         let scriptName = (c.serverScript as NSString).lastPathComponent
         if !allowedScripts.contains(scriptName) {
-            problems.append("serverScript must be whistle_srv.py or parakeet_srv.py; using default")
+            problems.append("serverScript must be parakeet_srv.py; using default")
             c.serverScript = d.serverScript
         }
         let pythonName = (c.pythonPath as NSString).lastPathComponent.lowercased()

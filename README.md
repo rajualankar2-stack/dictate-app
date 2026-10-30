@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 |---|---|---|
 | 🎙️ | **Toggle recording** | Press to start, press again to stop. No holding a key down. |
 | 🌊 | **Floating waveform** | Nine animated bars that adapt to dark and light mode |
-| 🧠 | **Two model backends** | Parakeet Unified EN 0.6B (default, under 0.1 s per clip) or Whistle (16 MB, CPU only) |
+| 🧠 | **On-device speech model** | Parakeet Unified EN 0.6B, under 0.1 s per clip, audio never leaves the Mac |
 | 🔠 | **Text style** | Normal, lowercase, UPPERCASE or random case, plus optional removal of the trailing period |
 | 👋 | **Welcome tour** | First launch walks through permissions and a practice dictation |
 | 🗣️ | **Voice commands** | Say "my email" and it inserts your email address |
@@ -50,7 +50,6 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 - Xcode Command Line Tools (`xcode-select --install`)
 - Python 3.10+ (macOS ships 3.9, so `brew install python@3.11` if needed)
 - Parakeet: about 731 MB disk for the model and about 1 GB RAM while it runs (it stops after 10 idle minutes)
-- Whistle: about 20 MB disk and about 30 MB RAM
 
 ## 🚀 Quick start
 
@@ -100,7 +99,6 @@ dictate-app/
 ├── Sources/DictateCore/      # Shared logic (config, controller, words)
 ├── server/                   # Python transcription servers
 │   ├── parakeet_srv.py       # Parakeet via transcribe.cpp (default)
-│   ├── whistle_srv.py        # Whistle (16 MB)
 │   └── stt_common.py         # SAP word fixes, audio preparation
 ├── Resources/Sounds/         # Sound packs
 ├── scripts/                  # Build and test scripts

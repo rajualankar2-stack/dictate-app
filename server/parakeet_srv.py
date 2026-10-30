@@ -6,7 +6,7 @@
   parakeet_srv.py stop                     stop the detached server (only if the pid is ours)
   parakeet_srv.py status                   print running/stopped
 
-Same HTTP contract as whistle_srv.py (127.0.0.1 only):
+HTTP contract (127.0.0.1 only):
   GET  /health      200 "ok" once the engine is ready
   POST /transcribe  body = WAV bytes. 200 text/plain = the text (empty = silence or too short).
 
