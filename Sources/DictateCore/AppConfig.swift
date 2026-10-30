@@ -65,6 +65,12 @@ public struct AppConfig: Codable, Equatable {
     public var settingsTab: String = "general"
     /// Where to save recorded audio for training (empty = don't save).
     public var saveAudioPath: String = ""
+    /// Letter case of dictated text: "normal", "lowercase", "uppercase" or "random".
+    public var textCase: String = "normal"
+    /// Remove . , ; : from the end of dictated text.
+    public var noTrailingPunctuation: Bool = false
+    /// True once the welcome tour was finished or skipped.
+    public var onboardingDone: Bool = false
 
     public init() {}
 
@@ -157,6 +163,10 @@ public struct AppConfig: Codable, Equatable {
         c.serverStartTimeoutSeconds = clamp(c.serverStartTimeoutSeconds, 10, 600, "serverStartTimeoutSeconds")
         c.silenceStopSeconds = clamp(c.silenceStopSeconds, 0, 10, "silenceStopSeconds")
         c.soundPack = clamp(c.soundPack, 1, 9, "soundPack")
+        if TextCase(rawValue: c.textCase) == nil {
+            problems.append("textCase must be normal, lowercase, uppercase or random; using normal")
+            c.textCase = d.textCase
+        }
         // H1: validate pythonPath and serverScript point to expected files
         let allowedScripts = ["whistle_srv.py", "parakeet_srv.py"]
         let scriptName = (c.serverScript as NSString).lastPathComponent

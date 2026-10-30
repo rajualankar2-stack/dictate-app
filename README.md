@@ -26,6 +26,8 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 | 🎙️ | **Toggle recording** | Press to start, press again to stop. No holding a key down. |
 | 🌊 | **Floating waveform** | Nine animated bars that adapt to dark and light mode |
 | 🧠 | **Two model backends** | Parakeet Unified EN 0.6B (default, under 0.1 s per clip) or Whistle (16 MB, CPU only) |
+| 🔠 | **Text style** | Normal, lowercase, UPPERCASE or random case, plus optional removal of the trailing period |
+| 👋 | **Welcome tour** | First launch walks through permissions and a practice dictation |
 | 🗣️ | **Voice commands** | Say "my email" and it inserts your email address |
 | 🔁 | **Text replacements** | Word-level rules, e.g. "cloud code" → "Claude Code" |
 | 🤫 | **Silence auto-stop** | Stops recording after a configurable pause |

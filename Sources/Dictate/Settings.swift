@@ -5,21 +5,23 @@ import ServiceManagement
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case general, words, dictation, status
+    case general, text, words, dictation, status
     var id: String { rawValue }
     var title: String {
         switch self {
         case .general: return "General"
+        case .text: return "Text"
         case .words: return "Words"
         case .dictation: return "Dictation"
-        case .status: return "Status"
+        case .status: return "Permissions"
         }
     }
     var icon: String {
         switch self {
-        case .general: return "gearshape"
-        case .words: return "textformat.abc"
-        case .dictation: return "mic"
+        case .general: return "slider.horizontal.3"
+        case .text: return "textformat"
+        case .words: return "text.book.closed"
+        case .dictation: return "waveform"
         case .status: return "checkmark.shield"
         }
     }
@@ -50,6 +52,16 @@ final class SettingsModel: ObservableObject {
     @Published var hotkeyActive = ""
     @Published var loginEnabled = false
     @Published var loginMessage: String?
+    var showTour: (() -> Void)?
+
+    /// Short text for a keycap, from the draft so it follows what the person picks.
+    var shortcutLabel: String {
+        if draft.hotkeyMode == "rightOptionHold" { return "Right \u{2325}" }
+        let sym = ["control": "\u{2303}", "ctrl": "\u{2303}", "option": "\u{2325}", "alt": "\u{2325}", "command": "\u{2318}", "cmd": "\u{2318}", "shift": "\u{21E7}"]
+        let mods = draft.hotkeyModifiers.map { sym[$0.lowercased()] ?? $0 }.joined()
+        let key = comboKeyChoices.first { $0.code == draft.hotkeyKeyCode }?.name ?? "?"
+        return mods + " " + key
+    }
 
     private let applyConfig: (AppConfig) -> String?     // returns an error message, or nil
     private let stopServer: () -> Void
@@ -127,55 +139,96 @@ struct SettingsView: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Toolbar
-            HStack {
-                Spacer()
-                Button("Revert") { model.revert() }.disabled(!model.hasChanges)
-                Button("Save") { model.save() }.keyboardShortcut("s", modifiers: .command).disabled(!model.hasChanges)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color(nsColor: .controlBackgroundColor))
-            Divider()
-            TabView(selection: $model.tab) {
-                GeneralTab(model: model).tabItem { Label("General", systemImage: SettingsTab.general.icon) }.tag(SettingsTab.general)
-                WordsTab(model: model).tabItem { Label("Words", systemImage: SettingsTab.words.icon) }.tag(SettingsTab.words)
-                DictationTab(model: model).tabItem { Label("Dictation", systemImage: SettingsTab.dictation.icon) }.tag(SettingsTab.dictation)
-                StatusTab(model: model).tabItem { Label("Status", systemImage: SettingsTab.status.icon) }.tag(SettingsTab.status)
-            }
-            .padding(.top, 6)
-            Divider()
-            VStack(spacing: 4) {
-                HStack(spacing: 10) {
-                    Circle().fill(model.serverChecking ? Color.orange : (model.serverRunning ? Color.green : Color.gray)).frame(width: 8, height: 8)
-                    Text(model.serverChecking ? "Checking…" : (model.serverRunning ? "Engine on" : "Engine off")).font(.caption).foregroundStyle(.secondary)
-                    if let m = model.message {
-                        Image(systemName: model.messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
-                            .foregroundStyle(model.messageIsError ? .red : .green)
-                        Text(m).font(.callout).lineLimit(2)
-                    } else if model.hasChanges {
-                        Image(systemName: "circle.fill").font(.system(size: 7)).foregroundStyle(.orange)
-                        Text("Unsaved changes").font(.callout).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                }
-                HStack {
-                    Text("Shortcut:").font(.caption).foregroundStyle(.secondary)
-                    Text(model.hotkeyActive).font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Color(nsColor: .controlBackgroundColor))
-                        .cornerRadius(4)
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.secondary.opacity(0.3), lineWidth: 1))
-                    Spacer()
-                }
-            }
-            .padding(12)
-            .background(.ultraThinMaterial)
+        HStack(spacing: 0) {
+            sidebar
+            panel
         }
-        .frame(minWidth: 640, idealWidth: 680, maxWidth: 760, minHeight: 600, idealHeight: 760, maxHeight: 900)
+        .background(DS.sidebarBG)
+        .frame(minWidth: 760, idealWidth: 820, maxWidth: 980, minHeight: 600, idealHeight: 720, maxHeight: 900)
         .onAppear { model.startRefreshing() }
         .onDisappear { model.stopRefreshing() }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(SettingsTab.allCases) { t in
+                Button { model.tab = t } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: t.icon).font(.system(size: 13)).frame(width: 20)
+                            .foregroundStyle(model.tab == t ? Color.primary : DS.faint)
+                        Text(t.title).font(.system(size: 13))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(model.tab == t ? Color.primary.opacity(0.08) : Color.clear))
+                    .contentShape(Rectangle())
+                }.buttonStyle(.plain)
+            }
+            Spacer()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 7) {
+                    Circle().fill(model.serverChecking ? Color.orange : (model.serverRunning ? Color.green : Color.gray)).frame(width: 7, height: 7)
+                    Text(model.serverChecking ? "Checking…" : (model.serverRunning ? "Speech engine on" : "Speech engine off"))
+                        .font(.system(size: 11)).foregroundStyle(DS.muted)
+                }
+                Button("Welcome tour…") { model.showTour?() }.buttonStyle(.plain)
+                    .font(.system(size: 11)).foregroundStyle(DS.muted)
+            }.padding(.horizontal, 10).padding(.bottom, 4)
+        }
+        .padding(.top, 16).padding(.horizontal, 10).padding(.bottom, 12)
+        .frame(width: 200)
+    }
+
+    private var panel: some View {
+        VStack(spacing: 0) {
+            Group {
+                switch model.tab {
+                case .general: GeneralTab(model: model)
+                case .text: TextTab(model: model)
+                case .words: WordsTab(model: model)
+                case .dictation: DictationTab(model: model)
+                case .status: StatusTab(model: model)
+                }
+            }
+            if model.hasChanges || model.message != nil {
+                Rectangle().fill(DS.hairline).frame(height: 1)
+                HStack(spacing: 10) {
+                    if let m = model.message, !model.hasChanges {
+                        Image(systemName: model.messageIsError ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                            .foregroundStyle(model.messageIsError ? .red : .green)
+                        Text(m).font(.system(size: 12)).lineLimit(2)
+                    } else {
+                        Circle().fill(Color.orange).frame(width: 7, height: 7)
+                        Text(model.message ?? "Unsaved changes").font(.system(size: 12)).foregroundStyle(DS.muted)
+                    }
+                    Spacer()
+                    if model.hasChanges {
+                        ActionButton(title: "Revert") { model.revert() }
+                        ActionButton(title: "Save", primary: true) { model.save() }.keyboardShortcut("s", modifiers: .command)
+                    }
+                }
+                .padding(.horizontal, 20).padding(.vertical, 10)
+            }
+        }
+        .background(DS.panelBG, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DS.hairline, lineWidth: 1))
+        .padding(.vertical, 8).padding(.trailing, 8)
+    }
+}
+
+/// Scrolling page with a title and cards at a fixed reading width.
+struct Page<Content: View>: View {
+    var title: String
+    @ViewBuilder var content: Content
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                PageTitle(text: title)
+                content
+            }
+            .padding(.horizontal, 24).padding(.vertical, 22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
@@ -193,71 +246,123 @@ struct GeneralTab: View {
                 })
     }
 
+    private func toggle(_ b: Binding<Bool>) -> some View { Toggle("", isOn: b).labelsHidden().toggleStyle(.switch) }
+
     var body: some View {
-        Form {
-            Section("Shortcut") {
-                Picker("Trigger key", selection: $model.draft.hotkeyMode) {
-                    Text("Right Option key (long press)").tag("rightOptionHold")
-                    Text("Key combination").tag("combo")
+        Page(title: "General") {
+            Card {
+                SettingRow(icon: "keyboard", title: "Shortcut", detail: "Press once to start, press again to stop") {
+                    Keycap(label: model.shortcutLabel)
                 }
-                if model.draft.hotkeyMode == "rightOptionHold" {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            Text("Press duration")
-                            Slider(value: $model.draft.holdSeconds, in: 0.15...1.0, step: 0.05)
-                            Text(String(format: "%.2f s", model.draft.holdSeconds)).monospacedDigit().frame(width: 52, alignment: .trailing)
+                SettingRow(icon: "hand.tap", title: "Trigger", divider: false) {
+                    Picker("", selection: $model.draft.hotkeyMode) {
+                        Text("Right Option (long press)").tag("rightOptionHold")
+                        Text("Key combination").tag("combo")
+                    }.labelsHidden().frame(width: 220)
+                }
+            }
+            if model.draft.hotkeyMode == "rightOptionHold" {
+                Card {
+                    SettingRow(icon: "timer", title: "Press duration", detail: "Shorter taps do nothing", divider: false) {
+                        HStack(spacing: 8) {
+                            Slider(value: $model.draft.holdSeconds, in: 0.15...1.0, step: 0.05).frame(width: 140)
+                            Text(String(format: "%.2f s", model.draft.holdSeconds)).monospacedDigit().font(.system(size: 12)).frame(width: 48, alignment: .trailing)
                         }
-                        Text("Recording starts after this long. A shorter tap, or Option with another key, does nothing. Speak just after the recording starts: a longer hold time clips more of your first word.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                } else {
-                    HStack(spacing: 14) {
-                        Toggle("\u{2303} Control", isOn: modifierBinding("control"))
-                        Toggle("\u{2325} Option", isOn: modifierBinding("option"))
-                        Toggle("\u{2318} Command", isOn: modifierBinding("command"))
-                        Toggle("\u{21E7} Shift", isOn: modifierBinding("shift"))
-                    }.toggleStyle(.checkbox)
-                    Picker("Key", selection: $model.draft.hotkeyKeyCode) {
-                        ForEach(comboKeyChoices, id: \.code) { Text($0.name).tag($0.code) }
-                    }.frame(width: 240)
-                    Text("Choose at least one modifier. Hold the combination, speak, release.").font(.caption).foregroundStyle(.secondary)
-                }
-                Text("Active now: \(model.hotkeyActive)").font(.caption).foregroundStyle(.secondary)
-            }
-            Section("App") {
-                Toggle("Show Dictate in the Dock", isOn: $model.draft.showInDock)
-                Text("Keep this on if the menu-bar icon is hidden: the Dock icon opens these settings.").font(.caption).foregroundStyle(.secondary)
-                Toggle("Open Dictate when I log in", isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
-                if let m = model.loginMessage { Text(m).font(.caption).foregroundStyle(.red) }
-            }
-            Section("Feedback") {
-                Picker("Sound", selection: $model.draft.soundPack) {
-                    Text("1 - Gentle chime").tag(1)
-                    Text("2 - Digital blip").tag(2)
-                    Text("3 - Synth sweep").tag(3)
-                    Text("4 - Sci-fi chirp").tag(4)
-                    Text("5 - Electronic ping").tag(5)
-                    Text("6 - Tron-like").tag(6)
-                    Text("7 - Cyber click").tag(7)
-                    Text("8 - Hologram shimmer").tag(8)
-                    Text("9 - Neon pulse").tag(9)
-                }
-                .onChange(of: model.draft.soundPack) { newPack in
-                    if let url = Bundle.main.url(forResource: "sound_\(newPack)_start", withExtension: "wav"),
-                       let sound = NSSound(contentsOf: url, byReference: true) {
-                        sound.play()
                     }
                 }
-                Text("Played when recording starts and stops. Preview by recording.").font(.caption).foregroundStyle(.secondary)
-                Toggle("Show recording animation", isOn: $model.draft.showRecordingAnimation)
-                Text("Floating waveform near the center of the screen while recording.").font(.caption).foregroundStyle(.secondary)
-                Toggle("Press Enter after pasting", isOn: $model.draft.autoPressEnter)
-                Text("Automatically press Return after dictating. Useful for chat and messaging apps.").font(.caption).foregroundStyle(.secondary)
-                Toggle("Save audio for training", isOn: Binding(get: { !model.draft.saveAudioPath.isEmpty }, set: { model.draft.saveAudioPath = $0 ? "~/Projects/voice-log/audio" : "" }))
-                Text("Saves each recording as a WAV file for future model fine-tuning. Off by default.").font(.caption).foregroundStyle(.secondary)
+            } else {
+                Card {
+                    SettingRow(icon: "command", title: "Modifiers", detail: "Choose at least one. Hold them, press the key, speak") {
+                        HStack(spacing: 10) {
+                            Toggle("\u{2303}", isOn: modifierBinding("control"))
+                            Toggle("\u{2325}", isOn: modifierBinding("option"))
+                            Toggle("\u{2318}", isOn: modifierBinding("command"))
+                            Toggle("\u{21E7}", isOn: modifierBinding("shift"))
+                        }.toggleStyle(.checkbox)
+                    }
+                    SettingRow(icon: "return", title: "Key", divider: false) {
+                        Picker("", selection: $model.draft.hotkeyKeyCode) {
+                            ForEach(comboKeyChoices, id: \.code) { Text($0.name).tag($0.code) }
+                        }.labelsHidden().frame(width: 140)
+                    }
+                }
+            }
+            Card(title: "App") {
+                SettingRow(icon: "power", title: "Open Dictate at login") {
+                    toggle(Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
+                }
+                SettingRow(icon: "dock.rectangle", title: "Show in the Dock", detail: "Keep it on if the menu-bar icon is hidden: the Dock icon opens settings", divider: false) {
+                    toggle($model.draft.showInDock)
+                }
+                if let m = model.loginMessage { Text(m).font(.system(size: 11)).foregroundStyle(.red).padding(.horizontal, 16).padding(.bottom, 8) }
+            }
+            Card(title: "Feedback") {
+                SettingRow(icon: "speaker.wave.2", title: "Sound") {
+                    Picker("", selection: $model.draft.soundPack) {
+                        Text("Gentle chime").tag(1); Text("Digital blip").tag(2); Text("Synth sweep").tag(3)
+                        Text("Sci-fi chirp").tag(4); Text("Electronic ping").tag(5); Text("Tron-like").tag(6)
+                        Text("Cyber click").tag(7); Text("Hologram shimmer").tag(8); Text("Neon pulse").tag(9)
+                    }.labelsHidden().frame(width: 180)
+                    .onChange(of: model.draft.soundPack) { newPack in
+                        if let url = Bundle.main.url(forResource: "sound_\(newPack)_start", withExtension: "wav"),
+                           let sound = NSSound(contentsOf: url, byReference: true) { sound.play() }
+                    }
+                }
+                SettingRow(icon: "waveform.path", title: "Recording animation", detail: "A floating waveform while you record") {
+                    toggle($model.draft.showRecordingAnimation)
+                }
+                SettingRow(icon: "return", title: "Press Enter after pasting", detail: "Useful in chat and messaging apps") {
+                    toggle($model.draft.autoPressEnter)
+                }
+                SettingRow(icon: "externaldrive", title: "Save audio for training", detail: "Keeps each recording as a WAV file. Off by default", divider: false) {
+                    toggle(Binding(get: { !model.draft.saveAudioPath.isEmpty }, set: { model.draft.saveAudioPath = $0 ? "~/Projects/voice-log/audio" : "" }))
+                }
             }
         }
-        .formStyle(.grouped)
+    }
+}
+
+// MARK: Text
+
+struct TextTab: View {
+    @ObservedObject var model: SettingsModel
+
+    private struct Fixed: RandomNumberGenerator {   // a fixed seed keeps the preview from flickering
+        var n: UInt64 = 7
+        mutating func next() -> UInt64 { n &+= 0x9E3779B97F4A7C15; var z = n; z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9; return z ^ (z >> 27) }
+    }
+
+    private var sample: String {
+        var g = Fixed()
+        return TextStyler.apply("Please send me the report by Friday afternoon.",
+                                textCase: TextCase(rawValue: model.draft.textCase) ?? .normal,
+                                noTrailingPunctuation: model.draft.noTrailingPunctuation, using: &g)
+    }
+
+    var body: some View {
+        Page(title: "Text") {
+            Card {
+                SettingRow(icon: "textformat", title: "Letter case", detail: "Applied to every dictation after transcribing", divider: false) {
+                    Picker("", selection: $model.draft.textCase) {
+                        Text("Normal").tag("normal")
+                        Text("lowercase").tag("lowercase")
+                        Text("UPPERCASE").tag("uppercase")
+                        Text("rAnDoM").tag("random")
+                    }.pickerStyle(.segmented).labelsHidden().frame(width: 300)
+                }
+            }
+            Card {
+                SettingRow(icon: "period", title: "No trailing punctuation", detail: "Removes . , ; : from the end. Keeps ? and !", divider: false) {
+                    Toggle("", isOn: $model.draft.noTrailingPunctuation).labelsHidden().toggleStyle(.switch)
+                }
+            }
+            Card(title: "Preview") {
+                Text(sample)
+                    .font(.system(size: 14)).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+            }
+        }
     }
 }
 
@@ -407,106 +512,98 @@ struct WordsTab: View {
 struct DictationTab: View {
     @ObservedObject var model: SettingsModel
 
-    var body: some View {
-        Form {
-            Section("Recording") {
-                slider("Ignore recordings shorter than", value: $model.draft.minSeconds, range: 0.1...1.0, step: 0.05, unit: "s", format: "%.2f",
-                       note: "Stops an accidental tap from pasting anything.")
-                slider("Auto-stop after silence", value: $model.draft.silenceStopSeconds, range: 0...10, step: 0.5, unit: "s", format: "%.1f",
-                       note: "Stop recording automatically when you stop speaking. Set to 0 to disable (press to stop manually).")
-                Stepper(value: Binding(get: { Int(model.draft.maxRecordSeconds) }, set: { model.draft.maxRecordSeconds = Double($0) }), in: 10...600, step: 10) {
-                    HStack { Text("Longest recording"); Spacer(); Text("\(Int(model.draft.maxRecordSeconds)) s").monospacedDigit().foregroundStyle(.secondary) }
-                }
-            }
-            Section("Pasting") {
-                slider("Hold the text on the clipboard for", value: Binding(get: { Double(model.draft.clipboardRestoreMs) }, set: { model.draft.clipboardRestoreMs = Int($0) }),
-                       range: 100...2000, step: 50, unit: "ms", format: "%.0f",
-                       note: "While the paste happens, the dictated text sits on the clipboard. Then your earlier clipboard comes back. Raise it if a slow app (Terminal, Electron) pastes your old clipboard instead.")
-            }
-            Section("Speech engine") {
-                Stepper(value: Binding(get: { max(1, model.draft.idleSeconds / 60) }, set: { model.draft.idleSeconds = $0 * 60 }), in: 1...240) {
-                    HStack { Text("Stop the engine after being idle for"); Spacer(); Text("\(max(1, model.draft.idleSeconds / 60)) min").monospacedDigit().foregroundStyle(.secondary) }
-                }
-                Text("The engine holds about 1.7 GB of memory while it runs. It starts when you first dictate and stops by itself.").font(.caption).foregroundStyle(.secondary)
-                HStack {
-                    Circle().fill(model.serverRunning ? Color.green : Color.gray).frame(width: 9, height: 9)
-                    Text(model.serverRunning ? "Engine running" : "Engine stopped")
-                    Spacer()
-                    Button("Stop engine now") { model.stopServerNow() }.disabled(!model.serverRunning)
-                }
-            }
-            Section("Advanced") {
-                Picker("Model", selection: $model.draft.modelBackend) {
-                    Text("Parakeet (local, fast, 731 MB)").tag("parakeet")
-                    Text("Whistle (16 MB, Cactus)").tag("whistle")
-                }
-                DisclosureGroup("Engine location") {
-                    TextField("Python", text: $model.draft.pythonPath).textFieldStyle(.roundedBorder)
-                    TextField("Server script", text: $model.draft.serverScript).textFieldStyle(.roundedBorder)
-                    TextField("Address", text: $model.draft.serverURL).textFieldStyle(.roundedBorder)
-                    Text("The address must be on this Mac (127.0.0.1 or localhost). Audio never leaves it.").font(.caption).foregroundStyle(.secondary)
-                }
+    private func sliderRow(icon: String, _ title: String, _ detail: String, value: Binding<Double>, range: ClosedRange<Double>,
+                           step: Double, unit: String, format: String, divider: Bool = true) -> some View {
+        SettingRow(icon: icon, title: title, detail: detail, divider: divider) {
+            HStack(spacing: 8) {
+                Slider(value: value, in: range, step: step).frame(width: 150)
+                Text(String(format: format, value.wrappedValue) + " " + unit).monospacedDigit()
+                    .font(.system(size: 12)).frame(width: 64, alignment: .trailing)
             }
         }
-        .formStyle(.grouped)
     }
 
-    private func slider(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, step: Double, unit: String, format: String, note: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title).font(.body)
-                Spacer()
-                Text(String(format: format, value.wrappedValue) + " " + unit)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(Color.accentColor)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.1))
-                    .cornerRadius(6)
+    var body: some View {
+        Page(title: "Dictation") {
+            Card(title: "Recording") {
+                sliderRow(icon: "scissors", "Ignore short recordings", "Stops an accidental tap from pasting anything",
+                          value: $model.draft.minSeconds, range: 0.1...1.0, step: 0.05, unit: "s", format: "%.2f")
+                sliderRow(icon: "speaker.slash", "Stop after silence", "Set to 0 to stop by hand only",
+                          value: $model.draft.silenceStopSeconds, range: 0...10, step: 0.5, unit: "s", format: "%.1f")
+                SettingRow(icon: "clock", title: "Longest recording", divider: false) {
+                    Stepper(value: Binding(get: { Int(model.draft.maxRecordSeconds) }, set: { model.draft.maxRecordSeconds = Double($0) }), in: 10...600, step: 10) {
+                        Text("\(Int(model.draft.maxRecordSeconds)) s").monospacedDigit().font(.system(size: 12))
+                    }
+                }
             }
-            Slider(value: value, in: range, step: step)
-                .tint(Color.accentColor)
-            Text(note).font(.caption).foregroundStyle(.secondary)
+            Card(title: "Pasting") {
+                sliderRow(icon: "doc.on.clipboard", "Hold text on the clipboard",
+                          "Raise it if a slow app (Terminal, Electron) pastes your old clipboard",
+                          value: Binding(get: { Double(model.draft.clipboardRestoreMs) }, set: { model.draft.clipboardRestoreMs = Int($0) }),
+                          range: 100...2000, step: 50, unit: "ms", format: "%.0f", divider: false)
+            }
+            Card(title: "Speech engine") {
+                SettingRow(icon: "cpu", title: "Model", detail: "Runs on this Mac. Audio never leaves it") {
+                    Picker("", selection: $model.draft.modelBackend) {
+                        Text("Parakeet (731 MB)").tag("parakeet")
+                        Text("Whistle (16 MB)").tag("whistle")
+                    }.labelsHidden().frame(width: 180)
+                }
+                SettingRow(icon: "moon.zzz", title: "Stop when idle", detail: "The engine uses about 1 GB while it runs and stops by itself") {
+                    Stepper(value: Binding(get: { max(1, model.draft.idleSeconds / 60) }, set: { model.draft.idleSeconds = $0 * 60 }), in: 1...240) {
+                        Text("\(max(1, model.draft.idleSeconds / 60)) min").monospacedDigit().font(.system(size: 12))
+                    }
+                }
+                SettingRow(icon: "circle.fill", title: model.serverRunning ? "Engine running" : "Engine stopped", divider: false) {
+                    SmallButton(title: "Stop now") { model.stopServerNow() }.opacity(model.serverRunning ? 1 : 0.4).disabled(!model.serverRunning)
+                }
+            }
+            DisclosureGroup("Advanced") {
+                Card {
+                    SettingRow(title: "Python", divider: true) { TextField("", text: $model.draft.pythonPath).textFieldStyle(.roundedBorder).frame(width: 320) }
+                    SettingRow(title: "Server script", divider: true) { TextField("", text: $model.draft.serverScript).textFieldStyle(.roundedBorder).frame(width: 320) }
+                    SettingRow(title: "Address", detail: "Must be on this Mac (127.0.0.1)", divider: false) { TextField("", text: $model.draft.serverURL).textFieldStyle(.roundedBorder).frame(width: 320) }
+                }.padding(.top, 8)
+            }
+            .font(.system(size: 12)).foregroundStyle(DS.muted)
         }
-        .padding(.vertical, 2)
     }
 }
 
-// MARK: Status
+// MARK: Permissions
 
 struct StatusTab: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
-        Form {
-            Section("Permissions") {
-                row("Microphone", ok: model.micAuthorized, detail: model.micDenied ? "Denied: turn it on in System Settings" : (model.micAuthorized ? "Allowed" : "Not asked yet"), pane: "Privacy_Microphone")
-                row("Accessibility", ok: model.accessibilityOK, detail: model.accessibilityOK ? "Allowed (needed to paste)" : "Needed to paste text into other apps", pane: "Privacy_Accessibility")
-                row("Input Monitoring", ok: model.inputMonitoringOK, detail: model.inputMonitoringOK ? "Allowed (needed for the right Option key)" : "Needed for the right Option key; the key combination works without it", pane: "Privacy_ListenEvent")
+        Page(title: "Permissions") {
+            Card {
+                permission("mic", "Microphone", ok: model.micAuthorized,
+                           detail: model.micDenied ? "Denied: turn it on in System Settings" : "Hears you only while you record", pane: "Privacy_Microphone")
+                permission("character.cursor.ibeam", "Accessibility", ok: model.accessibilityOK,
+                           detail: "Pastes your words into any app", pane: "Privacy_Accessibility")
+                permission("keyboard", "Input Monitoring", ok: model.inputMonitoringOK,
+                           detail: "Needed for the right Option key. The key combination works without it", pane: "Privacy_ListenEvent", divider: false)
             }
-            Section("Current state") {
-                HStack { Text("Shortcut"); Spacer(); Text(model.hotkeyActive).foregroundStyle(.secondary) }
-                HStack {
-                    Text("Menu-bar icon"); Spacer()
-                    Text(model.menuBarIconVisible ? "Visible" : "Hidden (menu bar is full)").foregroundStyle(model.menuBarIconVisible ? Color.secondary : Color.orange)
+            Card(title: "Current state") {
+                SettingRow(icon: "keyboard", title: "Shortcut") { Keycap(label: model.shortcutLabel) }
+                SettingRow(icon: "menubar.rectangle", title: "Menu-bar icon",
+                           detail: model.menuBarIconVisible ? nil : "macOS hides icons that do not fit. Use the Dock icon, or drag other icons out of the menu bar") {
+                    Text(model.menuBarIconVisible ? "Visible" : "Hidden").font(.system(size: 12))
+                        .foregroundStyle(model.menuBarIconVisible ? DS.muted : Color.orange)
                 }
-                if !model.menuBarIconVisible {
-                    Text("macOS hides menu-bar icons that do not fit. Hold Command and drag other icons out of the menu bar to make room, or use the Dock icon.").font(.caption).foregroundStyle(.secondary)
-                }
-                HStack { Text("Settings file"); Spacer(); Button("Show in Finder") { model.revealConfig() } }
+                SettingRow(icon: "doc.text", title: "Settings file", divider: false) { SmallButton(title: "Show in Finder") { model.revealConfig() } }
             }
         }
-        .formStyle(.grouped)
     }
 
-    private func row(_ name: String, ok: Bool, detail: String, pane: String) -> some View {
-        HStack {
-            Image(systemName: ok ? "checkmark.circle.fill" : "xmark.circle.fill").foregroundStyle(ok ? .green : .red)
-            VStack(alignment: .leading, spacing: 1) { Text(name); Text(detail).font(.caption).foregroundStyle(.secondary) }
-            Spacer()
-            Button("Open") { model.openPrivacy(pane) }
+    private func permission(_ icon: String, _ name: String, ok: Bool, detail: String, pane: String, divider: Bool = true) -> some View {
+        SettingRow(icon: icon, title: name, detail: detail, divider: divider) {
+            if ok {
+                HStack(spacing: 5) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green); Text("Allowed").font(.system(size: 12)).foregroundStyle(DS.muted) }
+            } else {
+                SmallButton(title: "Allow") { model.openPrivacy(pane) }
+            }
         }
     }
 }
-

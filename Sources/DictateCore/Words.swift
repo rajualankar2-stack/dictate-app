@@ -35,14 +35,17 @@ public final class LiveWords: @unchecked Sendable {
     private var _vocabulary: [String] = []
     private var _replacements: [Replacement] = []
     private var _commands: [VoiceCommand] = []
+    private var _textCase: TextCase = .normal
+    private var _noTrailingPunctuation = false
 
     public init(vocabulary: [String] = [], replacements: [Replacement] = [], commands: [VoiceCommand] = []) {
         _vocabulary = vocabulary; _replacements = replacements; _commands = commands
     }
-    public convenience init(config: AppConfig) { self.init(vocabulary: config.vocabulary, replacements: config.replacements, commands: config.commands) }
+    public convenience init(config: AppConfig) { self.init(); update(from: config) }
 
     public func update(from c: AppConfig) {
-        lock.lock(); _vocabulary = c.vocabulary; _replacements = c.replacements; _commands = c.commands; lock.unlock()
+        lock.lock(); _vocabulary = c.vocabulary; _replacements = c.replacements; _commands = c.commands
+        _textCase = TextCase(rawValue: c.textCase) ?? .normal; _noTrailingPunctuation = c.noTrailingPunctuation; lock.unlock()
     }
     public var vocabulary: [String] { lock.lock(); defer { lock.unlock() }; return _vocabulary }
     public var replacements: [Replacement] { lock.lock(); defer { lock.unlock() }; return _replacements }
@@ -55,6 +58,7 @@ public final class LiveWords: @unchecked Sendable {
             result = result.replacingOccurrences(of: trigger, with: cmd.value, options: .caseInsensitive)
         }
         result = TextReplacer.apply(result, replacements)
-        return result
+        lock.lock(); let style = (_textCase, _noTrailingPunctuation); lock.unlock()
+        return TextStyler.apply(result, textCase: style.0, noTrailingPunctuation: style.1)
     }
 }

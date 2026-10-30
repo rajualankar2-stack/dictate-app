@@ -18,8 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
     private let words = LiveWords()
     private var resetTimer: Timer?
     private var startupNote: String?
-    private var settingsWindow: NSWindow?
-    private var settingsModel: SettingsModel?
+    var settingsWindow: NSWindow?
+    var onboardingWindow: NSWindow?
+    var onboardingModel: OnboardingModel?
+    var settingsModel: SettingsModel?
     private var carbonActive = false
     private var escapeHandler: EventHandlerRef?
     private var escapeRef: EventHotKeyRef?
@@ -154,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         menu.addItem(statusLine)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Settings...", action: #selector(openSettings), keyEquivalent: ",")
+        menu.addItem(withTitle: "Welcome tour...", action: #selector(showOnboarding), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Microphone settings...", action: #selector(openMic), keyEquivalent: "")
         menu.addItem(withTitle: "Accessibility settings...", action: #selector(openAX), keyEquivalent: "")
@@ -169,12 +172,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         loadSounds()
 
         // Permissions: ask once at launch so the prompts do not appear mid-dictation.
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined { requestMicrophoneAccess() }
-        if !AXIsProcessTrusted() {
-            let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(opts)
+        // The first-run tour asks for them instead, one at a time, with an explanation.
+        if config.onboardingDone {
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined { requestMicrophoneAccess() }
+            if !AXIsProcessTrusted() {
+                let opts = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
+                _ = AXIsProcessTrustedWithOptions(opts)
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { MainActor.assumeIsolated { self.showOnboarding() } }
         }
 
+        runSnapshotsIfRequested()
         let ok = setupHotkey()
         if ok { if let w = loaded.warning { setIcon(.notice, w) } else { show(.idle) } }
 
@@ -297,6 +306,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
                 },
                 iconVisible: { [weak self] in self?.iconVisible() ?? false },
                 hotkeyDescription: { [weak self] in self?.hotkeyDescription() ?? "" })
+            model.showTour = { [weak self] in self?.showOnboarding() }
             settingsModel = model
             let w = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: model)))
             w.title = "Dictate Settings"
@@ -313,7 +323,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
+    @objc func showOnboarding() {
+        if let w = onboardingWindow { NSApp.activate(); w.makeKeyAndOrderFront(nil); return }
+        let model = OnboardingModel(
+            hotkey: { [weak self] in self?.hotkeyLabel() ?? "" },
+            needsInputMonitoring: { [weak self] in self?.config.hotkeyMode == "rightOptionHold" },
+            startEngine: { [weak self] in
+                guard let s = self?.supervisor else { return }
+                Task { try? await s.ensureReady() }
+            },
+            checkEngine: { [weak self] in
+                guard let c = self?.config, let url = URL(string: c.serverURL) else { return false }
+                return await TranscribeClient(baseURL: url).healthy()
+            },
+            finish: { [weak self] in self?.finishOnboarding() })
+        onboardingModel = model
+        let w = NSWindow(contentViewController: NSHostingController(rootView: OnboardingView(model: model)))
+        w.title = "Welcome to Dictate"
+        w.styleMask = [.titled, .closable, .fullSizeContentView]
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.isReleasedWhenClosed = false
+        w.delegate = self
+        w.center()
+        onboardingWindow = w
+        NSApp.activate()
+        w.makeKeyAndOrderFront(nil)
+    }
+
+    private func finishOnboarding() {
+        if !config.onboardingDone {
+            config.onboardingDone = true
+            try? config.save()
+            // Ask for anything the tour skipped, the way a normal launch does.
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined { requestMicrophoneAccess() }
+        }
+        onboardingWindow?.close()
+    }
+
     func windowWillClose(_ notification: Notification) {
+        if (notification.object as? NSWindow) === onboardingWindow {
+            onboardingModel?.stop(); onboardingWindow = nil; onboardingModel = nil
+            if !config.onboardingDone { config.onboardingDone = true; try? config.save() }
+            return
+        }
         if let t = settingsModel?.tab {
             config.settingsTab = t.rawValue
             try? config.save()
@@ -333,6 +386,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         // Preserve correction suggestions that arrived while the settings window was open.
         let existingSuggestions = config.suggestedCorrections
         var merged = new
+        merged.onboardingDone = merged.onboardingDone || config.onboardingDone
         for s in existingSuggestions where !merged.suggestedCorrections.contains(where: { $0.id == s.id }) {
             merged.suggestedCorrections.append(s)
         }
