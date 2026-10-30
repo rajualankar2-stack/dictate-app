@@ -546,9 +546,14 @@ struct DictationTab: View {
                 SettingRow(icon: "cpu", title: "Model", detail: "Runs on this Mac. Audio never leaves it") {
                     Text("Parakeet Unified EN (731 MB)").font(.system(size: 12)).foregroundStyle(DS.muted)
                 }
-                SettingRow(icon: "moon.zzz", title: "Stop when idle", detail: "The engine uses about 1 GB while it runs and stops by itself") {
-                    Stepper(value: Binding(get: { max(1, model.draft.idleSeconds / 60) }, set: { model.draft.idleSeconds = $0 * 60 }), in: 1...240) {
-                        Text("\(max(1, model.draft.idleSeconds / 60)) min").monospacedDigit().font(.system(size: 12))
+                SettingRow(icon: "bolt.fill", title: "Keep the engine always on", detail: "Answers instantly and is shared with Hermes. Uses about 1 GB of memory") {
+                    Toggle("", isOn: Binding(get: { model.draft.idleSeconds == 0 }, set: { model.draft.idleSeconds = $0 ? 0 : 600 })).labelsHidden().toggleStyle(.switch)
+                }
+                if model.draft.idleSeconds != 0 {
+                    SettingRow(icon: "moon.zzz", title: "Stop when idle", detail: "Frees the memory when you have not dictated for a while") {
+                        Stepper(value: Binding(get: { max(1, model.draft.idleSeconds / 60) }, set: { model.draft.idleSeconds = $0 * 60 }), in: 1...240) {
+                            Text("\(max(1, model.draft.idleSeconds / 60)) min").monospacedDigit().font(.system(size: 12))
+                        }
                     }
                 }
                 SettingRow(icon: "circle.fill", title: model.serverRunning ? "Engine running" : "Engine stopped", divider: false) {

@@ -82,6 +82,16 @@ open build/Dictate.app
 
 The app starts the transcription server itself on the first key press. Nothing else needs to be installed: the speech engine (`transcribe-cpp`, Metal) runs inside the app's own Python.
 
+### Always-on engine (optional)
+
+By default the speech engine stays on once it starts (Settings → Dictation → Keep the engine always on) and answers in about 0.1 s. It uses about 1 GB of memory. To start it at every login, and share it with other apps on the Mac, install the login agent:
+
+```bash
+bash scripts/parakeet_agent.sh install      # remove with: bash scripts/parakeet_agent.sh uninstall
+```
+
+The engine listens on `127.0.0.1:8774`. Send it a 16 kHz WAV with `curl --data-binary @clip.wav http://127.0.0.1:8774/transcribe`.
+
 ### 2. Signing
 
 `build_app.sh` signs with your Apple Development certificate if you have one. Without one it signs ad-hoc, which works, but macOS treats every rebuild as a new app, so you have to grant Accessibility again after each rebuild.

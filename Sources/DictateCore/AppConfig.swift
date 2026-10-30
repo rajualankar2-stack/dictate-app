@@ -27,7 +27,7 @@ public struct AppConfig: Codable, Equatable {
     /// The venv scripts/setup.sh creates.
     public var pythonPath: String = AppConfig.projectDir + "/.venv/bin/python"
     public var serverScript: String = AppConfig.projectDir + "/server/parakeet_srv.py"
-    public var idleSeconds: Int = 600
+    public var idleSeconds: Int = 0
     /// Carbon virtual key code. 49 = Space.
     public var hotkeyKeyCode: UInt32 = 49
     /// Any of: control, option, command, shift.
