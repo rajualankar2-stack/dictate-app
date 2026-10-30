@@ -202,6 +202,9 @@ def serve(idle):
         except Exception:
             pass
         print('exited cleanly', flush=True)
+        # Skip C++ static destructors: ggml's Metal teardown aborts at normal exit and macOS shows a
+        # "Python quit unexpectedly" dialog. The work is done and the pid file is removed.
+        os._exit(0)
 
 
 def cmd_start(idle):
