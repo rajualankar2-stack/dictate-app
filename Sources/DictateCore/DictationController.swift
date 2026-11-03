@@ -46,13 +46,15 @@ public actor DictationController {
 
     private func set(_ s: DictationState) {
         switch s { case .notice: state = .idle; default: state = s }
+        AppLog.log("state \(s)")
         sink?.dictationState(s)
     }
 
     public func keyDown(targetAppPID: pid_t? = nil) {
-        guard state == .idle else { return }
+        guard state == .idle else { AppLog.log("keyDown ignored, state \(state)"); return }
         self.targetAppPID = targetAppPID
         do { try recorder.start() } catch {
+            AppLog.log("error microphone unavailable: \(error.localizedDescription)")
             set(.notice("Microphone unavailable: \(error.localizedDescription)")); return
         }
         set(.recording)
@@ -103,16 +105,21 @@ public actor DictationController {
             try? FileManager.default.removeItem(at: url)
         }
         defer { warm = nil }
-        guard let wav = data else { set(.notice("No audio was captured")); return }
-        guard let info = WAVInfo.parse(wav) else { set(.notice("The recording was not valid audio")); return }
-        if info.duration < minSeconds { set(.idle); return }   // accidental tap: do nothing
+        guard let wav = data else { AppLog.log("error no audio captured"); set(.notice("No audio was captured")); return }
+        guard let info = WAVInfo.parse(wav) else { AppLog.log("error invalid wav, \(wav.count) bytes"); set(.notice("The recording was not valid audio")); return }
+        AppLog.log(String(format: "recorded %.1fs, %d bytes, saved=%@", info.duration, wav.count, saveAudioPath.isEmpty ? "no" : "yes"))
+        if info.duration < minSeconds { AppLog.log("ignored: shorter than minSeconds"); set(.idle); return }
+        let started = Date()   // accidental tap: do nothing
         let text: String
         do {
             try await warm?.value
             text = postProcess(try await service.transcribe(wav))
         } catch {
+            AppLog.log(String(format: "error transcribe failed after %.1fs: %@", Date().timeIntervalSince(started), "\(error)"))
             set(.notice("Transcription failed: \(error)")); return
         }
+        let took = Date().timeIntervalSince(started)
+        AppLog.log(String(format: "transcribed in %.2fs, %d chars%@", took, text.count, took > 3 ? " SLOW" : ""))
         if text.isEmpty { set(.notice("No speech detected")); return }
         switch await inserter.insert(text, intoAppPID: targetAppPID) {
         case .pasted: set(.idle)

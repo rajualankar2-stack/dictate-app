@@ -137,6 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
     // MARK: launch
 
     func applicationDidFinishLaunching(_ n: Notification) {
+        AppLog.log("app launched, backend \(config.modelBackend)")
         // One copy only: a second launch would fight over the hotkey. Skipped when run as a bare binary (no bundle id).
         let me = NSRunningApplication.current
         if let bid = me.bundleIdentifier,
