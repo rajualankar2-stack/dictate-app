@@ -37,6 +37,8 @@ public final class LiveWords: @unchecked Sendable {
     private var _commands: [VoiceCommand] = []
     private var _textCase: TextCase = .normal
     private var _noTrailingPunctuation = false
+    private var _removeFillers = false
+    private var _spokenFormatting = false
 
     public init(vocabulary: [String] = [], replacements: [Replacement] = [], commands: [VoiceCommand] = []) {
         _vocabulary = vocabulary; _replacements = replacements; _commands = commands
@@ -45,7 +47,8 @@ public final class LiveWords: @unchecked Sendable {
 
     public func update(from c: AppConfig) {
         lock.lock(); _vocabulary = c.vocabulary; _replacements = c.replacements; _commands = c.commands
-        _textCase = TextCase(rawValue: c.textCase) ?? .normal; _noTrailingPunctuation = c.noTrailingPunctuation; lock.unlock()
+        _textCase = TextCase(rawValue: c.textCase) ?? .normal; _noTrailingPunctuation = c.noTrailingPunctuation
+        _removeFillers = c.removeFillerWords; _spokenFormatting = c.spokenFormatting; lock.unlock()
     }
     public var vocabulary: [String] { lock.lock(); defer { lock.unlock() }; return _vocabulary }
     public var replacements: [Replacement] { lock.lock(); defer { lock.unlock() }; return _replacements }
@@ -57,8 +60,10 @@ public final class LiveWords: @unchecked Sendable {
             guard !trigger.isEmpty else { continue }
             result = result.replacingOccurrences(of: trigger, with: cmd.value, options: .caseInsensitive)
         }
+        lock.lock(); let style = (_textCase, _noTrailingPunctuation); let clean = (_removeFillers, _spokenFormatting); lock.unlock()
+        if clean.0 { result = TextCleanup.removeFillers(result) }
         result = TextReplacer.apply(result, replacements)
-        lock.lock(); let style = (_textCase, _noTrailingPunctuation); lock.unlock()
+        if clean.1 { result = TextCleanup.spokenFormat(result) }
         return TextStyler.apply(result, textCase: style.0, noTrailingPunctuation: style.1)
     }
 }

@@ -27,3 +27,35 @@ final class TextStyleTests: XCTestCase {
         XCTAssertEqual(c.validated().config.textCase, "normal")
     }
 }
+
+final class TextCleanupTests: XCTestCase {
+    func testFillersRemoved() {
+        XCTAssertEqual(TextCleanup.removeFillers("Um, I think, uh, we should go."), "I think, we should go.")
+        XCTAssertEqual(TextCleanup.removeFillers("um so the report is ready"), "so the report is ready")
+        XCTAssertEqual(TextCleanup.removeFillers("Um, so it works"), "So it works")
+    }
+    func testFillerLookalikesKept() {
+        XCTAssertEqual(TextCleanup.removeFillers("The umbrella is here, ask Herman"), "The umbrella is here, ask Herman")
+    }
+    func testSpokenFormat() {
+        XCTAssertEqual(TextCleanup.spokenFormat("Hello, new line, how are you"), "Hello\nhow are you")
+        XCTAssertEqual(TextCleanup.spokenFormat("Done. New paragraph. Next topic"), "Done.\n\nNext topic")
+        XCTAssertEqual(TextCleanup.spokenFormat("a newline in code"), "a newline in code")
+    }
+    func testLiveWordsOrder() {
+        var c = AppConfig(); c.removeFillerWords = true; c.spokenFormatting = true
+        XCTAssertEqual(LiveWords(config: c).process("Uh, first point, new line, second point"), "First point\nsecond point")
+    }
+    func testSmartSpacingRules() {
+        XCTAssertTrue(SmartSpacing.needsLeadingSpace(before: "d", text: "next"))
+        XCTAssertTrue(SmartSpacing.needsLeadingSpace(before: ".", text: "Next"))
+        XCTAssertTrue(SmartSpacing.needsLeadingSpace(before: ")", text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: " ", text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: "(", text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: "@", text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: "\"", text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: nil, text: "next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: "d", text: ", next"))
+        XCTAssertFalse(SmartSpacing.needsLeadingSpace(before: "d", text: " next"))
+    }
+}

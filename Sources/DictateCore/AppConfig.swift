@@ -53,7 +53,7 @@ public struct AppConfig: Codable, Equatable {
     public var serverStartTimeoutSeconds: Double = 120
     /// Seconds of silence before auto-stopping a recording (0 = disabled).
     public var silenceStopSeconds: Double = 3.0
-    /// Sound pack for recording feedback (1-9). 1 = gentle chime, 2-9 = futuristic.
+    /// Sound pack for recording feedback (1-16). 1 = gentle chime, 2-9 = futuristic, 10-16 = Hex sets, 17-21 = premium synth sets.
     public var soundPack: Int = 1
     /// Show the floating waveform animation while recording.
     public var showRecordingAnimation: Bool = true
@@ -69,6 +69,14 @@ public struct AppConfig: Codable, Equatable {
     public var textCase: String = "normal"
     /// Remove . , ; : from the end of dictated text.
     public var noTrailingPunctuation: Bool = false
+    /// Remove um, uh, er and similar fillers from dictated text.
+    public var removeFillerWords: Bool = false
+    /// Turn the spoken phrases "new line" and "new paragraph" into line breaks.
+    public var spokenFormatting: Bool = false
+    /// Add one leading space when the text lands right after a word.
+    public var smartSpacing: Bool = false
+    /// Put the text on the clipboard only. Do not press Cmd+V.
+    public var copyOnly: Bool = false
     /// True once the welcome tour was finished or skipped.
     public var onboardingDone: Bool = false
 
@@ -162,7 +170,7 @@ public struct AppConfig: Codable, Equatable {
         c.transcribeTimeoutSeconds = clamp(c.transcribeTimeoutSeconds, 5, 600, "transcribeTimeoutSeconds")
         c.serverStartTimeoutSeconds = clamp(c.serverStartTimeoutSeconds, 10, 600, "serverStartTimeoutSeconds")
         c.silenceStopSeconds = clamp(c.silenceStopSeconds, 0, 10, "silenceStopSeconds")
-        c.soundPack = clamp(c.soundPack, 1, 9, "soundPack")
+        c.soundPack = clamp(c.soundPack, 1, 21, "soundPack")
         if TextCase(rawValue: c.textCase) == nil {
             problems.append("textCase must be normal, lowercase, uppercase or random; using normal")
             c.textCase = d.textCase

@@ -302,6 +302,10 @@ struct GeneralTab: View {
                         Text("Gentle chime").tag(1); Text("Digital blip").tag(2); Text("Synth sweep").tag(3)
                         Text("Sci-fi chirp").tag(4); Text("Electronic ping").tag(5); Text("Tron-like").tag(6)
                         Text("Cyber click").tag(7); Text("Hologram shimmer").tag(8); Text("Neon pulse").tag(9)
+                        Text("Hex signature").tag(10); Text("Hex classic").tag(11); Text("Hex wood").tag(12)
+                        Text("Hex analog").tag(13); Text("Hex click").tag(14); Text("Hex soft").tag(15); Text("Hex thock").tag(16)
+                        Text("Glass").tag(17); Text("Velvet").tag(18); Text("Droplet").tag(19)
+                        Text("Halo").tag(20); Text("Pulse").tag(21)
                     }.labelsHidden().frame(width: 180)
                     .onChange(of: model.draft.soundPack) { newPack in
                         if let url = Bundle.main.url(forResource: "sound_\(newPack)_start", withExtension: "wav"),
@@ -313,6 +317,12 @@ struct GeneralTab: View {
                 }
                 SettingRow(icon: "return", title: "Press Enter after pasting", detail: "Useful in chat and messaging apps") {
                     toggle($model.draft.autoPressEnter)
+                }
+                SettingRow(icon: "textformat.abc", title: "Smart spacing", detail: "Adds a space when you dictate right after a word") {
+                    toggle($model.draft.smartSpacing)
+                }
+                SettingRow(icon: "doc.on.clipboard", title: "Copy instead of paste", detail: "Puts the text on the clipboard. You press Cmd+V") {
+                    toggle($model.draft.copyOnly)
                 }
                 SettingRow(icon: "externaldrive", title: "Save audio for training", detail: "Keeps each recording as a WAV file. Off by default", divider: false) {
                     toggle(Binding(get: { !model.draft.saveAudioPath.isEmpty }, set: { model.draft.saveAudioPath = $0 ? "~/Projects/voice-log/audio" : "" }))
@@ -354,6 +364,14 @@ struct TextTab: View {
             Card {
                 SettingRow(icon: "period", title: "No trailing punctuation", detail: "Removes . , ; : from the end. Keeps ? and !", divider: false) {
                     Toggle("", isOn: $model.draft.noTrailingPunctuation).labelsHidden().toggleStyle(.switch)
+                }
+            }
+            Card {
+                SettingRow(icon: "text.badge.minus", title: "Remove filler words", detail: "Removes um, uh, er, ah and hmm") {
+                    Toggle("", isOn: $model.draft.removeFillerWords).labelsHidden().toggleStyle(.switch)
+                }
+                SettingRow(icon: "return", title: "Spoken formatting", detail: "Say \"new line\" or \"new paragraph\" for a line break", divider: false) {
+                    Toggle("", isOn: $model.draft.spokenFormatting).labelsHidden().toggleStyle(.switch)
                 }
             }
             Card(title: "Preview") {

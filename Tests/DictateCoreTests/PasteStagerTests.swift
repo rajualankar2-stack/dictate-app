@@ -95,3 +95,34 @@ final class PasteStagerTests: XCTestCase {
         XCTAssertEqual(pb.string(forType: .string), "original")
     }
 }
+
+final class PasteModeTests: XCTestCase {
+    var pb: NSPasteboard!
+    override func setUp() { pb = NSPasteboard(name: NSPasteboard.Name("dictate-test-\(UUID().uuidString)")) }
+    override func tearDown() { pb.releaseGlobally() }
+
+    func testSmartSpacingAddsSpace() async {
+        let p = FakePoster(); var seen: String?
+        p.onPost = { seen = self.pb.string(forType: .string) }
+        let s = PasteStager(pasteboard: pb, poster: p, restoreDelay: 0.05)
+        s.smartSpacing = true; s.caretReader = { "k" }
+        _ = await s.paste("next"); XCTAssertEqual(seen, " next")
+    }
+    func testSmartSpacingOffLeavesText() async {
+        let p = FakePoster(); var seen: String?
+        p.onPost = { seen = self.pb.string(forType: .string) }
+        let s = PasteStager(pasteboard: pb, poster: p, restoreDelay: 0.05)
+        s.caretReader = { "k" }
+        _ = await s.paste("next"); XCTAssertEqual(seen, "next")
+    }
+    func testCopyOnlyKeepsTextAndSendsNoPaste() async {
+        pb.clearContents(); pb.setString("old", forType: .string)
+        let p = FakePoster()
+        let s = PasteStager(pasteboard: pb, poster: p, restoreDelay: 0.05)
+        s.copyOnly = true; s.smartSpacing = true; s.caretReader = { "k" }
+        let r = await s.paste("dictated")
+        XCTAssertEqual(p.posts, 0)
+        XCTAssertEqual(pb.string(forType: .string), "dictated")
+        if case .copiedOnly = r {} else { XCTFail("expected copiedOnly") }
+    }
+}

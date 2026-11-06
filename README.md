@@ -40,13 +40,14 @@ https://github.com/user-attachments/assets/3ec8319d-ad5d-459f-97f2-c1e4ac40beab
 | 🎙️ | **Toggle recording** | Press to start, press again to stop. No holding a key down. |
 | 🌊 | **Floating waveform** | Nine animated bars that adapt to dark and light mode |
 | 🧠 | **On-device speech model** | Parakeet Unified EN 0.6B, under 0.1 s per clip, audio never leaves the Mac |
+| 🧹 | **Text clean-up** | Optional: remove filler words (um, uh), spoken "new line" and "new paragraph", smart spacing after a word, copy-only mode (no Cmd+V) |
 | 🔠 | **Text style** | Normal, lowercase, UPPERCASE or random case, plus optional removal of the trailing period |
 | 👋 | **Welcome tour** | First launch walks through permissions and a practice dictation |
 | 🗣️ | **Voice commands** | Say "my email" and it inserts your email address |
 | 🔁 | **Text replacements** | Word-level rules, e.g. "cloud code" → "Claude Code" |
 | 🤫 | **Silence auto-stop** | Stops recording after a configurable pause |
 | 📚 | **Correction learning** | Notices your edits after a paste and suggests replacements |
-| 🔊 | **Sound packs** | 9 futuristic press and release sound packs with live preview |
+| 🔊 | **Sound packs** | 21 start and stop sound packs with live preview: 9 futuristic, 7 from [Hex](https://github.com/anomalyco/hex) (MIT), 5 premium synth sets (Glass, Velvet, Droplet, Halo, Pulse) |
 | ↩️ | **Auto-press Enter** | Optional, for chat and messaging apps |
 | ⎋ | **Escape to discard** | Throw away a recording mid-flight |
 | 💾 | **Audio saving** | Opt-in, for future model training |

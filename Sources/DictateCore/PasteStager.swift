@@ -29,6 +29,12 @@ public final class PasteStager: TextInserter, @unchecked Sendable {
     private let poster: KeyPoster
     private let restoreDelay: TimeInterval
     public var autoPressEnter: Bool = false
+    /// Add a leading space when the cursor sits right after a word.
+    public var smartSpacing: Bool = false
+    /// Only copy to the clipboard. Send no Cmd+V and do not restore the old clipboard.
+    public var copyOnly: Bool = false
+    /// Returns the character left of the cursor. Replaceable in tests.
+    public var caretReader: @Sendable () -> Character? = { CaretReader.charBeforeCaret() }
     /// Called ~5s after pasting with (pastedText, currentFieldText). Return suggestions.
     public var onCorrectionCheck: ((String, String) -> Void)?
 
@@ -60,7 +66,8 @@ public final class PasteStager: TextInserter, @unchecked Sendable {
 
     public func insert(_ text: String, intoAppPID: pid_t?) async -> PasteResult { await paste(text, intoAppPID: intoAppPID) }
 
-    public func paste(_ text: String, intoAppPID: pid_t? = nil) async -> PasteResult {
+    public func paste(_ input: String, intoAppPID: pid_t? = nil) async -> PasteResult {
+        var text = input
         // If the frontmost app changed since recording started, copy to clipboard only
         if let target = intoAppPID, target != NSWorkspace.shared.frontmostApplication?.processIdentifier {
             pasteboard.prepareForNewContents(with: .currentHostOnly)
@@ -69,6 +76,14 @@ public final class PasteStager: TextInserter, @unchecked Sendable {
             pasteboard.writeObjects([item])
             return .copiedOnly(reason: "app changed; text copied to clipboard")
         }
+        if copyOnly {
+            pasteboard.prepareForNewContents(with: .currentHostOnly)
+            let plain = NSPasteboardItem()
+            plain.setString(text, forType: .string)
+            pasteboard.writeObjects([plain])
+            return .copiedOnly(reason: "copy-only mode; press Cmd+V to paste")
+        }
+        if smartSpacing { text = SmartSpacing.apply(text, before: caretReader()) }
         let saved = snapshot()
         // currentHostOnly: dictated text must not sync to other Apple devices through Universal Clipboard.
         pasteboard.prepareForNewContents(with: .currentHostOnly)

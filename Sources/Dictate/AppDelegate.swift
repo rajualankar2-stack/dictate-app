@@ -222,6 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         let stager = PasteStager(poster: CGEventPoster(), restoreDelay: Double(config.clipboardRestoreMs) / 1000)
         self.stager = stager
         stager.autoPressEnter = config.autoPressEnter
+        stager.smartSpacing = config.smartSpacing; stager.copyOnly = config.copyOnly
         stager.onCorrectionCheck = { [weak self] pasted, current in
             guard let self else { return }
             let pairs = CorrectionExtractor.extract(original: pasted, corrected: current)
@@ -396,7 +397,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
         let old = config
         config = merged
         words.update(from: merged)
-        if let s = self.stager { s.autoPressEnter = merged.autoPressEnter }
+        if let s = self.stager { s.autoPressEnter = merged.autoPressEnter; s.smartSpacing = merged.smartSpacing; s.copyOnly = merged.copyOnly }
         // Parakeet is the only engine. Older settings (whisper, whistle) and their old ports move to it.
         merged.modelBackend = "parakeet"
         merged.serverScript = (merged.serverScript as NSString).deletingLastPathComponent + "/parakeet_srv.py"
