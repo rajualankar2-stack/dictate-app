@@ -61,7 +61,7 @@ public struct AppConfig: Codable, Equatable {
     public var modelBackend: String = "parakeet"
     /// Press Enter after pasting dictated text.
     public var autoPressEnter: Bool = false
-    /// Pause playing music and video while recording, resume after.
+    /// Mute system sound while recording, restore after.
     public var pauseMediaWhileRecording: Bool = true
     /// Last selected settings tab.
     public var settingsTab: String = "general"

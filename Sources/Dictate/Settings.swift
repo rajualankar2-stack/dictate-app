@@ -315,7 +315,7 @@ struct GeneralTab: View {
                 SettingRow(icon: "waveform.path", title: "Recording animation", detail: "A floating waveform while you record") {
                     toggle($model.draft.showRecordingAnimation)
                 }
-                SettingRow(icon: "pause.circle", title: "Pause media while recording", detail: "Pauses music and video, then resumes them") {
+                SettingRow(icon: "pause.circle", title: "Mute sound while recording", detail: "Mutes music and video, then restores the sound") {
                     toggle($model.draft.pauseMediaWhileRecording)
                 }
                 SettingRow(icon: "return", title: "Press Enter after pasting", detail: "Useful in chat and messaging apps") {

@@ -270,47 +270,41 @@ struct CGEventPoster: KeyPoster {
 }
 
 
-/// Pauses system media (music, video) while recording and resumes it afterwards.
-/// It sends the Play/Pause media key only if the default output device is running,
-/// and resumes only if it paused something itself.
+/// Mutes system output while recording and restores it afterwards. Muting has no toggle
+/// ambiguity, unlike the Play/Pause key, which cannot tell if media is playing (Chrome).
+/// The mute starts 0.35 s late so the start sound is still heard.
 @MainActor
 final class MediaPauser {
-    private var paused = false
+    private var muted = false
+    private var pending: DispatchWorkItem?
 
-    private static func outputIsRunning() -> Bool {
-        var dev = AudioDeviceID(0)
-        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &dev) == noErr else { return false }
-        var running = UInt32(0)
-        size = UInt32(MemoryLayout<UInt32>.size)
-        addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
-                                          mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-        guard AudioObjectGetPropertyData(dev, &addr, 0, nil, &size, &running) == noErr else { return false }
-        return running != 0
-    }
-
-    private static func sendPlayPause() {
-        for down in [true, false] {
-            let flags = NSEvent.ModifierFlags(rawValue: down ? 0xa00 : 0xb00)
-            let data1 = (16 << 16) | ((down ? 0xa : 0xb) << 8)   // NX_KEYTYPE_PLAY
-            NSEvent.otherEvent(with: .systemDefined, location: .zero, modifierFlags: flags, timestamp: 0,
-                               windowNumber: 0, context: nil, subtype: 8, data1: data1, data2: -1)?.cgEvent?.post(tap: .cghidEventTap)
-        }
+    private static func run(_ src: String) -> String? {
+        var err: NSDictionary?
+        return NSAppleScript(source: src)?.executeAndReturnError(&err).stringValue
     }
 
     func pause() {
-        guard !paused, Self.outputIsRunning() else { return }
-        Self.sendPlayPause()
-        paused = true
-        AppLog.log("media paused")
+        guard !muted, pending == nil else { return }
+        let w = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.pending = nil
+                // Already muted by the user: leave it alone and do not unmute later.
+                guard Self.run("output muted of (get volume settings)") == "false" else { return }
+                _ = Self.run("set volume output muted true")
+                self.muted = true
+                AppLog.log("output muted")
+            }
+        }
+        pending = w
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: w)
     }
 
     func resume() {
-        guard paused else { return }
-        paused = false
-        Self.sendPlayPause()
-        AppLog.log("media resumed")
+        pending?.cancel(); pending = nil
+        guard muted else { return }
+        muted = false
+        _ = Self.run("set volume output muted false")
+        AppLog.log("output unmuted")
     }
 }
