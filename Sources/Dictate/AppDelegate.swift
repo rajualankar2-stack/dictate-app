@@ -35,8 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, StatusSink, NSWindowDe
 
     // MARK: menu-bar look
 
+    private let mediaPauser = MediaPauser()
+
     private func show(_ s: DictationState) {
         resetTimer?.invalidate()
+        if case .recording = s { if config.pauseMediaWhileRecording { mediaPauser.pause() } } else { mediaPauser.resume() }
         switch s {
         case .idle:
             setIcon(.idle, "Ready. Hold \(hotkeyLabel()) to dictate" + (startupNote.map { " (\($0))" } ?? ""))

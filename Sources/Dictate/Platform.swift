@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Carbon.HIToolbox
+import CoreAudio
 import DictateCore
 
 // MARK: - Hotkey (Carbon RegisterEventHotKey: reports key press AND release, needs no Accessibility permission)
@@ -265,5 +266,51 @@ struct CGEventPoster: KeyPoster {
         down.post(tap: .cgSessionEventTap)
         up.post(tap: .cgSessionEventTap)
         return true
+    }
+}
+
+
+/// Pauses system media (music, video) while recording and resumes it afterwards.
+/// It sends the Play/Pause media key only if the default output device is running,
+/// and resumes only if it paused something itself.
+@MainActor
+final class MediaPauser {
+    private var paused = false
+
+    private static func outputIsRunning() -> Bool {
+        var dev = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &dev) == noErr else { return false }
+        var running = UInt32(0)
+        size = UInt32(MemoryLayout<UInt32>.size)
+        addr = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyDeviceIsRunningSomewhere,
+                                          mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(dev, &addr, 0, nil, &size, &running) == noErr else { return false }
+        return running != 0
+    }
+
+    private static func sendPlayPause() {
+        for down in [true, false] {
+            let flags = NSEvent.ModifierFlags(rawValue: down ? 0xa00 : 0xb00)
+            let data1 = (16 << 16) | ((down ? 0xa : 0xb) << 8)   // NX_KEYTYPE_PLAY
+            NSEvent.otherEvent(with: .systemDefined, location: .zero, modifierFlags: flags, timestamp: 0,
+                               windowNumber: 0, context: nil, subtype: 8, data1: data1, data2: -1)?.cgEvent?.post(tap: .cghidEventTap)
+        }
+    }
+
+    func pause() {
+        guard !paused, Self.outputIsRunning() else { return }
+        Self.sendPlayPause()
+        paused = true
+        AppLog.log("media paused")
+    }
+
+    func resume() {
+        guard paused else { return }
+        paused = false
+        Self.sendPlayPause()
+        AppLog.log("media resumed")
     }
 }
